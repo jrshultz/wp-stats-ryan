@@ -49,6 +49,9 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
 .timer .label{ font-weight:600; }
 #ptToggle.running{ background:var(--gold); color:#111; border:none; }
 
+/* Trends canvas sizing fix */
+#trendCanvas{ width:100%; display:block; background:#fff; border:1px solid #eee; border-radius:10px; }
+
 @media (max-width:740px){
   .controls{ grid-template-columns: 1fr 78px 70px 78px; }
   button{ font-size:15px; }
@@ -145,6 +148,9 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
 
   <!-- Season -->
   <section id="season" class="panel">
+    <div class="card" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="dlSeasonTotals" class="btn-sm">Download Season Totals CSV</button>
+    </div>
     <div id="seasonTotals" class="card"></div>
   </section>
 
@@ -154,6 +160,7 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
       <h3>Season Trends</h3>
       <div class="fine">Toggle series:</div>
       <canvas id="trendCanvas" height="260"></canvas>
+      <div id="trendEmpty" class="fine" style="display:none;margin-top:8px;">No games yet — save a game to see trends.</div>
       <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
         <label><input type="checkbox" id="t_goals" checked> Goals</label>
         <label><input type="checkbox" id="t_shots" checked> Shots</label>
@@ -193,8 +200,8 @@ const supabase = window.supabase.createClient("https://hlcxhyrdumxfrlqgkcvf.supa
 </script>
 
 <script>
-const LS_KEY = "wp_supabase_timer_v2f";
-const DRAFT_KEY = "wp_supabase_timer_v2f_draft";
+const LS_KEY = "wp_supabase_timer_v2g";
+const DRAFT_KEY = "wp_supabase_timer_v2g_draft";
 
 const statDefs = [
   { key:"shot", label:"Shot" },
@@ -215,7 +222,13 @@ function blankGame(){
   statDefs.forEach(s => g.stats[s.key] = 0);
   return g;
 }
-function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || {games:[], settings:{pctMode:false, autoSaveCSV:false}, user:null}; }catch{ return {games:[], settings:{pctMode:false, autoSaveCSV:false}, user:null}; } }
+function load(){ 
+  try{ 
+    return JSON.parse(localStorage.getItem(LS_KEY)) || {games:[], settings:{pctMode:false, autoSaveCSV:true}, user:null}; 
+  }catch{ 
+    return {games:[], settings:{pctMode:false, autoSaveCSV:true}, user:null}; 
+  } 
+}
 function save(state){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)) || null; }catch{ return null; } }
 function saveDraft(){ localStorage.setItem(DRAFT_KEY, JSON.stringify(current)); }
@@ -235,7 +248,7 @@ document.querySelectorAll(".tab").forEach(btn=>{
     document.getElementById(btn.dataset.tab).classList.add("active");
     if(btn.dataset.tab==="games") renderGames();
     if(btn.dataset.tab==="season") renderSeason();
-    if(btn.dataset.tab==="trends") drawTrends();
+    if(btn.dataset.tab==="trends") drawTrends(true);
     if(btn.dataset.tab==="settings") {
       document.getElementById("pctMode").checked = !!state.settings.pctMode;
       document.getElementById("autoSaveCSV").checked = !!state.settings.autoSaveCSV;
@@ -413,6 +426,18 @@ function downloadCSVForGame(g){
   URL.revokeObjectURL(url);
 }
 
+function downloadSeasonTotalsCSV(totals){
+  const headers = ["Stat","Value"];
+  const rows = [];
+  for (const [k,v] of Object.entries(totals)) rows.push(`${k},${v}`);
+  const csv = headers.join(",") + "\n" + rows.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "ryan_wp_season_totals.csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
 // Save/New/Print
 document.getElementById("saveGame").addEventListener("click", ()=>{
   const snap = JSON.parse(JSON.stringify(current));
@@ -502,25 +527,61 @@ function renderSeason(){
   gsum = agg.goal; ssum = agg.shot; asum = agg.assist;
   const n = state.games.length || 0;
   const avgSec = n ? Math.round(tsum / n) : 0;
+  const totals = {
+    Points: gsum + asum,
+    ShotPct: (ssum? (gsum/ssum).toFixed(2) : "-"),
+    Minutes: fmtTime(tsum),
+    AvgMinutesPerGame: fmtTime(avgSec)
+  };
+  // Pack per-stat too
+  statDefs.forEach(s=> totals[s.label] = agg[s.key]);
+
   const html = `
     <h3>Season Totals</h3>
     <table>
       <tbody>
         ${statDefs.map(s=>`<tr><th>${s.label}</th><td class="right">${agg[s.key]}</td></tr>`).join("")}
-        <tr><th>Points</th><td class="right">${gsum + asum}</td></tr>
-        <tr><th>Shot %</th><td class="right">${(ssum? (gsum/ssum).toFixed(2) : "-")}</td></tr>
-        <tr><th>Minutes</th><td class="right">${fmtTime(tsum)}</td></tr>
-        <tr><th>Avg Minutes/Game</th><td class="right">${fmtTime(avgSec)}</td></tr>
+        <tr><th>Points</th><td class="right">${totals.Points}</td></tr>
+        <tr><th>Shot %</th><td class="right">${totals.ShotPct}</td></tr>
+        <tr><th>Minutes</th><td class="right">${totals.Minutes}</td></tr>
+        <tr><th>Avg Minutes/Game</th><td class="right">${totals.AvgMinutesPerGame}</td></tr>
       </tbody>
     </table>`;
   document.getElementById("seasonTotals").innerHTML = html;
+
+  // Wire button
+  const btn = document.getElementById("dlSeasonTotals");
+  btn.onclick = () => {
+    // build csv as two-column stat,value. Put core stats first.
+    const order = [
+      ...statDefs.map(s=>s.label),
+      "Points","ShotPct","Minutes","AvgMinutesPerGame"
+    ];
+    const rows = order.map(k => `${k},${totals[k]}`);
+    const csv = "Stat,Value\n" + rows.join("\n");
+    const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "ryan_wp_season_totals.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 }
 
-// Trends
-function drawTrends(){
+// Trends with robust sizing + empty state
+function drawTrends(force=false){
   const cvs = document.getElementById("trendCanvas"); const ctx = cvs.getContext("2d");
-  const dpr = window.devicePixelRatio || 1; const wCSS = cvs.clientWidth; const hCSS = 260;
-  cvs.width = wCSS * dpr; cvs.height = hCSS * dpr; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,wCSS,hCSS);
+  const empty = document.getElementById("trendEmpty");
+  if (!state.games.length) { ctx.clearRect(0,0,cvs.width,cvs.height); empty.style.display="block"; return; }
+  empty.style.display="none";
+
+  // Determine width safely
+  let wCSS = cvs.getBoundingClientRect().width;
+  if (!wCSS || wCSS < 10) wCSS = (cvs.parentElement?.clientWidth || 320);
+  const hCSS = 260;
+  const dpr = window.devicePixelRatio || 1;
+  cvs.width = Math.floor(wCSS * dpr); cvs.height = Math.floor(hCSS * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,wCSS,hCSS);
 
   const games = state.games.slice().reverse();
   const goals = games.map(g=>g.stats.goal||0);
@@ -548,6 +609,7 @@ function drawTrends(){
   series.forEach((s,i)=>{ ctx.strokeStyle = colors[i%colors.length]; ctx.lineWidth=2; drawLine(s.data); ctx.fillStyle="#111"; ctx.fillText(s.name, pad.l+6+i*80, pad.t+12); ctx.strokeStyle=colors[i%colors.length]; ctx.beginPath(); ctx.moveTo(pad.l+i*70, pad.t+8); ctx.lineTo(pad.l+i*70+40, pad.t+8); ctx.stroke(); });
 }
 ["t_goals","t_shots","t_points","t_shotpct","t_minutes"].forEach(id=>{ document.getElementById(id).addEventListener("change", drawTrends); });
+window.addEventListener("resize", ()=>drawTrends());
 
 // Settings
 document.getElementById("pctMode").addEventListener("change",(e)=>{ state.settings.pctMode = !!e.target.checked; save(state); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
@@ -573,7 +635,7 @@ function toCSV(){
 document.getElementById("exportCSV").addEventListener("click", ()=>{ const blob = new Blob([toCSV()],{type:"text/csv;charset=utf-8"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href=url; a.download="ryan_wp_stats.csv"; a.click(); URL.revokeObjectURL(url); });
 document.getElementById("exportJSON").addEventListener("click", ()=>{ const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"}); const url = URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="ryan_wp_backup.json"; a.click(); URL.revokeObjectURL(url); });
 document.getElementById("importJSON").addEventListener("change",(e)=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const obj=JSON.parse(r.result); if(!obj||typeof obj!=="object"||!Array.isArray(obj.games)) throw new Error("Invalid backup"); state=obj; save(state); alert("Imported."); renderGames(); renderSeason(); drawTrends(); renderCurrent(); }catch(err){ alert("Import failed: "+err.message); } }; r.readAsText(f); });
-document.getElementById("resetAll").addEventListener("click", ()=>{ if(!confirm("Erase ALL local data on this device?")) return; state = {games:[], settings:{pctMode:false, autoSaveCSV:false}, user:null}; save(state); localStorage.removeItem(DRAFT_KEY); current = blankGame(); undoStack=[]; stopTimer(); dateEl.value=current.date; oppEl.value=""; notesEl.value=""; ptTimeEl.textContent=fmtTime(0); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
+document.getElementById("resetAll").addEventListener("click", ()=>{ if(!confirm("Erase ALL local data on this device?")) return; state = {games:[], settings:{pctMode:false, autoSaveCSV:true}, user:null}; save(state); localStorage.removeItem(DRAFT_KEY); current = blankGame(); undoStack=[]; stopTimer(); dateEl.value=current.date; oppEl.value=""; notesEl.value=""; ptTimeEl.textContent=fmtTime(0); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
 
 // Cloud status helpers
 const cloudStatus = document.getElementById("cloudStatus");
