@@ -1,1 +1,9 @@
-self.addEventListener('fetch', e=>e.respondWith(fetch(e.request)));
+self.addEventListener('install', (e)=>{
+  e.waitUntil(caches.open('wp-stats-cache-v6').then(c=>c.addAll([
+    './','./index.html','./manifest.json','./sw.js','./icon-192.png','./icon-512.png',
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+  ])));
+});
+self.addEventListener('fetch', (event)=>{
+  event.respondWith(caches.match(event.request).then(resp => resp || fetch(event.request)));
+});
