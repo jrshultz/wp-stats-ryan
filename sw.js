@@ -1,8 +1,2 @@
-self.addEventListener('install', (e)=>{
-  e.waitUntil(caches.open('wp-stats-cache-v13').then(c=>c.addAll([
-    './','./index.html','./manifest.json','./sw.js','./icon-192.png','./icon-512.png'
-  ])));
-});
-self.addEventListener('fetch', (event)=>{
-  event.respondWith(caches.match(event.request).then(resp => resp || fetch(event.request)));
-});
+self.addEventListener('install',e=>{e.waitUntil(caches.open('wp-v15').then(c=>c.addAll(['./','./index.html','./manifest.json','./sw.js','./icon-192.png','./icon-512.png'])))});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))})
