@@ -1,7 +1,6 @@
-
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Ryan WP Stats — v18 clickfix</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#155e2e">
+<title>Ryan WP Stats — v19 hotfix</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#155e2e">
 <style>
 :root{--green:#155e2e;--gold:#d4af37;--bg:#f7f7f9;--card:#fff;--line:#e9e9ef}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial;background:var(--bg)}
@@ -23,13 +22,10 @@ main{padding:12px}.panel{display:none}.panel.active{display:block}.card{backgrou
 .btn-sm{padding:8px 10px;font-size:14px;border-radius:10px}.primary{background:#155e2e;color:#fff;border:none}.danger{background:#e33;color:#fff;border:none}
 .timer{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.timer .time{font-weight:700;font-variant-numeric:tabular-nums;padding:8px 12px;border-radius:10px;border:1px solid #ddd;background:#fff;cursor:pointer}
 #ptToggle.running{background:var(--gold);color:#111;border:none}
-#trendCanvas{width:100%;display:block;background:#fff;border:1px solid #eee;border-radius:10px}
 .fine{font-size:12px;color:#666}
-@media(max-width:740px){.controls{grid-template-columns:1fr 78px 70px 78px}button{font-size:15px}}
-@media print{header,.tabs,.menu-panel,.menu-btn,#record .actions .danger,#record .actions .primary,#games .card button,#season .actions,#settings{display:none!important}body{background:#fff}.card{border:none}}
 </style></head><body>
 <header><div class="header-inner">
-  <h1>Ryan WP Stats <span style="font-weight:400;font-size:12px;opacity:.8">(v18 clickfix)</span></h1>
+  <h1>Ryan WP Stats <span style="font-weight:400;font-size:12px;opacity:.8">(v19 hotfix)</span></h1>
   <div class="header-actions">
     <span id="cloudStatus" class="status-pill">Not signed in</span>
     <button id="menuBtn" class="menu-btn">☰</button>
@@ -94,8 +90,6 @@ main{padding:12px}.panel{display:none}.panel.active{display:block}.card{backgrou
         <label><input type="checkbox" id="t_goals" checked> Goals</label>
         <label><input type="checkbox" id="t_shots" checked> Shots</label>
         <label><input type="checkbox" id="t_points" checked> Points</label>
-        <label><input type="checkbox" id="t_shotpct" checked> Shot %</label>
-        <label><input type="checkbox" id="t_minutes" checked> Minutes</label>
       </div>
     </div>
   </section>
@@ -105,7 +99,6 @@ main{padding:12px}.panel{display:none}.panel.active{display:block}.card{backgrou
       <label><input type="checkbox" id="pctMode"> Use Shot% = shots / goals (non-standard)</label>
       <p class="fine">Default is the standard: Shot% = goals / shots.</p>
       <label style="display:block;margin-top:10px"><input type="checkbox" id="autoSaveCSV"> Auto-save game CSV to device after Save</label>
-      <p class="fine">On iPhone, look in the Files app.</p>
     </div>
   </section>
 </main>
@@ -116,14 +109,10 @@ main{padding:12px}.panel{display:none}.panel.active{display:block}.card{backgrou
 </script>
 
 <script>
-// Tiny error reporter
-window.addEventListener('error', function(e){
-  var box = document.getElementById('authMsg');
-  if(box){ box.style.color='#b11'; box.textContent = 'JS error: ' + (e.message || e.error || 'unknown'); }
-});
+window.addEventListener('error', (e)=>{ const m=document.getElementById('authMsg'); if(m){ m.style.color='#b11'; m.textContent='JS error: ' + (e.message||'unknown'); }});
 
-// ---- State ----
-const LS_KEY='wp_v18_full', DRAFT_KEY='wp_v18_full_draft';
+// ---- State helpers ----
+const LS_KEY='wp_v19_full', DRAFT_KEY='wp_v19_full_draft';
 const statDefs=[
   {key:'shot',label:'Shot'},{key:'goal',label:'Goal'},{key:'assist',label:'Assist'},
   {key:'steal',label:'Steal'},{key:'block',label:'Block'},
@@ -160,8 +149,7 @@ function buildRows(){
   rowsDiv.innerHTML='';
   statDefs.forEach(s=>{
     const row=document.createElement('div'); row.className='row controls';
-    row.innerHTML=`<div class="label">{label}</div><button class="dec" data-k="{key}" type="button">−</button><div class="counter" id="c_{key}">0</div><button class="inc" data-k="{key}" type="button">+</button>`
-      .replaceAll('{label}', s.label).replaceAll('{key}', s.key);
+    row.innerHTML=`<div class="label">${s.label}</div><button class="dec" data-k="${s.key}" type="button">−</button><div class="counter" id="c_${s.key}">0</div><button class="inc" data-k="${s.key}" type="button">+</button>`;
     rowsDiv.appendChild(row);
   });
   rowsDiv.querySelectorAll('.inc').forEach(b=>b.addEventListener('click',()=>inc(b.dataset.k)));
@@ -242,7 +230,7 @@ function renderGames(){
   });
   wrap.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click',()=>downloadCSVForGame(state.games[+b.dataset.dl])));
   wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.del; if(!confirm('Delete this game?')) return; state.games.splice(i,1); save(state); renderGames(); renderSeason(); queueSync();}));
-  wrap.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.edit; const g=state.games[i]; if(!g) return; if(!confirm('Load this game into the editor? Current draft will be replaced.')) return; stopTimer(); current=JSON.parse(JSON.stringify(g)); undoStack=[]; dateEl.value=current.date; oppEl.value=current.opponent; notesEl.value=current.notes||''; ptTimeEl.textContent=fmtTime(current.pt_seconds||0); renderCurrent(); saveDraft(); document.querySelector('.tab[data-ta...
+  wrap.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.edit; const g=state.games[i]; if(!g) return; if(!confirm('Load this game into the editor? Current draft will be replaced.')) return; stopTimer(); current=JSON.parse(JSON.stringify(g)); undoStack=[]; dateEl.value=current.date; oppEl.value=current.opponent; notesEl.value=current.notes||''; ptTimeEl.textContent=fmtTime(current.pt_seconds||0); renderCurrent(); saveDraft(); document.querySelector('.tab[data-tab="record"]').click(); }));
 }
 
 // ---- Season totals ----
@@ -274,23 +262,21 @@ function renderSeason(){
   };
 }
 
-// ---- Trends ----
+// ---- Trends (simple lines) ----
 function drawTrends(){
   const cvs=document.getElementById('trendCanvas'), ctx=cvs.getContext('2d'), empty=document.getElementById('trendEmpty');
-  if(!state.games.length){ ctx.clearRect(0,0,cvs.width,cvs.height); empty.style.display='block'; return; } empty.style.display='none';
+  if(!state.games.length){ ctx.clearRect(0,0,cvs.width,cvs.height); if(empty) empty.style.display='block'; return; } if(empty) empty.style.display='none';
   let w=cvs.getBoundingClientRect().width||320, h=260, dpr=window.devicePixelRatio||1; cvs.width=Math.floor(w*dpr); cvs.height=Math.floor(h*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
   const games=state.games.slice().reverse();
-  const goals=games.map(g=>g.stats.goal||0), shots=games.map(g=>g.stats.shot||0), points=games.map(g=>(g.stats.goal||0)+(g.stats.assist||0)), shotpct=games.map(g=>{const s=g.stats.shot||0,go=g.stats.goal||0;return s?go/s:0;}), minutes=games.map(g=>Math.round((g.pt_seconds||0)/60));
-  const series=[]; const add=(id,n,d,c)=>{ if(document.getElementById(id).checked) series.push({name:n,data:d,color:c}); };
-  add('t_goals','Goals',goals,'#1f7a1f'); add('t_shots','Shots',shots,'#1f4f7a'); add('t_points','Points',points,'#7a1f3e'); add('t_shotpct','Shot%',shotpct,'#7a6a1f'); add('t_minutes','Minutes',minutes,'#3e1f7a');
+  const goals=games.map(g=>g.stats.goal||0), shots=games.map(g=>g.stats.shot||0), points=games.map(g=>(g.stats.goal||0)+(g.stats.assist||0));
+  const series=[]; const add=(id,n,d,c)=>{ const el=document.getElementById(id); if(!el||!el.checked) return; series.push({name:n,data:d,color:c}); };
+  add('t_goals','Goals',goals,'#1f7a1f'); add('t_shots','Shots',shots,'#1f4f7a'); add('t_points','Points',points,'#7a1f3e');
   const pad={l:36,r:10,t:10,b:24}, pw=w-pad.l-pad.r, ph=h-pad.t-pad.b; const maxY=Math.max(5,...series.flatMap(s=>s.data));
   ctx.strokeStyle='#ccc'; ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
-  ctx.fillStyle='#666'; ctx.font='12px -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial';
-  const steps=5; for(let i=0;i<=steps;i++){ const yv=Math.round(i*maxY/steps*100)/100; const y=pad.t+ph-(yv/maxY)*ph; ctx.fillText(String(yv),4,y+4); ctx.strokeStyle='#eee'; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke(); }
   const xFor=(i,n)=> pad.l+(i*(pw/Math.max(1,n-1))), yFor=(v,m)=> pad.t+ph-(v/m)*ph;
-  series.forEach(s=>{ ctx.strokeStyle=s.color; ctx.lineWidth=2; ctx.beginPath(); s.data.forEach((v,i)=>{const x=xFor(i,s.data.length), y=yFor(v,maxY); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);}); ctx.stroke(); s.data.forEach((v,i)=>{const x=xFor(i,s.data.length), y=yFor(v,maxY); ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fillStyle=s.color; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();}); });
+  series.forEach(s=>{ ctx.strokeStyle=s.color; ctx.lineWidth=2; ctx.beginPath(); s.data.forEach((v,i)=>{const x=xFor(i,s.data.length), y=yFor(v,maxY); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);}); ctx.stroke(); });
 }
-['t_goals','t_shots','t_points','t_shotpct','t_minutes'].forEach(id=>document.getElementById(id).addEventListener('change',drawTrends));
+['t_goals','t_shots','t_points'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change',drawTrends); });
 addEventListener('resize',drawTrends);
 
 // ---- Settings ----
@@ -309,13 +295,11 @@ document.getElementById('exportJSON').addEventListener('click',()=>{ const a=doc
 document.getElementById('importJSON').addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const obj=JSON.parse(r.result); if(!obj||typeof obj!=='object'||!Array.isArray(obj.games)) throw new Error('Invalid backup'); state=obj; save(state); alert('Imported.'); renderGames(); renderSeason(); drawTrends(); renderCurrent(); }catch(err){ alert('Import failed: '+err.message);} }; r.readAsText(f); });
 document.getElementById('resetAll').addEventListener('click',()=>{ if(!confirm('Erase ALL local data on this device?')) return; state={games:[],settings:{pctMode:false,autoSaveCSV:true},user:null}; save(state); localStorage.removeItem(DRAFT_KEY); current=blankGame(); undoStack=[]; dateEl.value=current.date; oppEl.value=''; notesEl.value=''; ptTimeEl.textContent=fmtTime(0); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
 
-// ---- Auth (debug text + bulletproof click) ----
+// ---- Auth ----
 const cloudStatus=document.getElementById('cloudStatus'); const setCloud=(t)=>cloudStatus.textContent=t;
 const authMsg=document.getElementById('authMsg'); const emailInput=document.getElementById('loginEmail'); const passInput=document.getElementById('loginPassword');
 const btnSignIn=document.getElementById('signInBtn'); const btnSignUp=document.getElementById('signUpBtn'); const btnSignOut=document.getElementById('signOutBtn'); const btnSyncNow=document.getElementById('syncNowBtn');
 function setAuthMsg(t,ok=false){ authMsg.textContent=t||''; authMsg.style.color= ok ? '#155e2e' : '#b11'; }
-
-// Make the debug text show even if other JS later fails
 btnSignIn.setAttribute('onclick',"document.getElementById('authMsg').textContent='Sign in clicked…'");
 
 btnSignIn.addEventListener('click', async (e)=>{
@@ -326,7 +310,7 @@ btnSignIn.addEventListener('click', async (e)=>{
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if(error) setAuthMsg('Login failed: '+error.message);
     else setAuthMsg('Signed in!',true);
-  }catch(err){ console.error(err); setAuthMsg('Unexpected: '+err.message); }
+  }catch(err){ setAuthMsg('Unexpected: '+err.message); }
 });
 
 btnSignUp.addEventListener('click', async (e)=>{
@@ -337,7 +321,7 @@ btnSignUp.addEventListener('click', async (e)=>{
     const { error } = await supabase.auth.signUp({ email, password });
     if(error) setAuthMsg('Sign up failed: '+error.message);
     else setAuthMsg('Account created. You can sign in now.',true);
-  }catch(err){ console.error(err); setAuthMsg('Unexpected: '+err.message); }
+  }catch(err){ setAuthMsg('Unexpected: '+err.message); }
 });
 
 btnSignOut.addEventListener('click', async ()=>{ await supabase.auth.signOut(); state.user=null; save(state); setAuthMsg('Signed out',true); setCloud('Not signed in'); });
@@ -345,20 +329,15 @@ if(btnSyncNow) btnSyncNow.addEventListener('click', ()=> queueSync() );
 supabase.auth.onAuthStateChange((_evt, session)=>{ if(session&&session.user){ state.user=session.user; save(state); setCloud('Signed in'); queueSync(); } else { state.user=null; save(state); setCloud('Not signed in'); } });
 
 // ---- Cloud sync ----
-async function fetchCloudGames(){ if(!state.user) return []; const {data,error}=await supabase.from('games').select('*').order('created_at',{ascending:false}); if(error){console.error(error); return [];} return data; }
-async function pushLocalToCloud(){ if(!state.user) return; setCloud('Syncing…'); for(const g of state.games){ if(!g.cloud_id){ const payload={ user_id: state.user.id, date:g.date, opponent:g.opponent, notes:g.notes, stats:g.stats, pt_seconds:g.pt_seconds||0, local_id: (crypto?.randomUUID?.()||String(Math.random()).slice(2)) }; const {data,error}=await supabase.from('games').insert(payload).select(); if(!error&&data&&data[0]) g.cloud_id=data[0].id; save(state);} } setCloud('Synced'); }
+async function fetchCloudGames(){ if(!state.user) return []; try{ const {data,error}=await supabase.from('games').select('*').order('created_at',{ascending:false}); if(error) return []; return data; }catch(e){ return []; } }
+async function pushLocalToCloud(){ if(!state.user) return; setCloud('Syncing…'); for(const g of state.games){ if(!g.cloud_id){ const payload={ user_id: state.user.id, date:g.date, opponent:g.opponent, notes:g.notes, stats:g.stats, pt_seconds:g.pt_seconds||0 }; try{ const {data,error}=await supabase.from('games').insert(payload).select(); if(!error&&data&&data[0]) g.cloud_id=data[0].id; }catch(e){} } } setCloud('Synced'); save(state); }
 async function pullCloudToLocal(){ if(!state.user) return; const cloud=await fetchCloudGames(); const known=new Set(state.games.map(g=>g.cloud_id).filter(Boolean)); cloud.forEach(r=>{ if(!known.has(r.id)) state.games.unshift({date:r.date,opponent:r.opponent,notes:r.notes,stats:r.stats,pt_seconds:r.pt_seconds||0,cloud_id:r.id}); }); save(state); }
-let syncQueued=false; function queueSync(){ if(!state.user) return; if(syncQueued) return; syncQueued=true; setTimeout(async()=>{ syncQueued=false; try{ setCloud('Syncing…'); await pushLocalToCloud(); await pullCloudToLocal(); setCloud('Synced'); renderGames(); renderSeason(); drawTrends(); }catch(e){ console.error(e); setCloud('Error'); } }, 500); }
-document.getElementById('syncNowBtn').addEventListener('click', ()=> queueSync() );
+let syncQueued=false; function queueSync(){ if(!state.user) return; if(syncQueued) return; syncQueued=true; setTimeout(async()=>{ syncQueued=false; try{ setCloud('Syncing…'); await pushLocalToCloud(); await pullCloudToLocal(); setCloud('Synced'); renderGames(); renderSeason(); drawTrends(); }catch(e){ setCloud('Error'); } }, 400); }
 
 // ---- Init ----
-function stopTimer(){ if(!timerId) return; tickTimer(); clearInterval(timerId); timerId=null; lastTick=null; ptToggle.textContent='Start'; ptToggle.classList.remove('running'); }
-function startTimer(){ if(timerId) return; lastTick=Date.now(); timerId=setInterval(tickTimer,1000); ptToggle.textContent='Stop'; ptToggle.classList.add('running'); }
 renderGames(); renderSeason(); drawTrends();
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations()
-    .then(regs=>Promise.all(regs.map(r=>r.unregister())))
-    .finally(()=>navigator.serviceWorker.register('sw.js?v=18'));
+  navigator.serviceWorker.getRegistrations().then(regs=>Promise.all(regs.map(r=>r.unregister()))).finally(()=>navigator.serviceWorker.register('sw.js?v=19'));
 }
 </script>
 </body></html>
