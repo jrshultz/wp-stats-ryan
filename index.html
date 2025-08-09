@@ -73,7 +73,8 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
       <span id="cloudStatus" class="status-pill">Not signed in</span>
       <button id="menuBtn" class="menu-btn">☰</button>
       <div id="menuPanel" class="menu-panel">
-        <button id="signInBtn">Sign in (email)</button>
+        <button id="signInBtn">Sign in (password)</button>
+        <button id="signUpBtn">Create account</button>
         <button id="signOutBtn">Sign out</button>
         <button id="syncNowBtn">Sync now</button>
         <button id="exportCSV">Export CSV</button>
@@ -495,12 +496,22 @@ function setCloud(txt){ cloudStatus.textContent = txt; }
 
 // Auth
 document.getElementById("signInBtn").addEventListener("click", async ()=>{
-  const email = prompt("Email for sign-in link:"); if(!email) return;
-  const { data, error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
-  if (error) alert(error.message); else alert("Check your email for the sign-in link.");
+  const email = prompt("Email:"); if(!email) return;
+  const password = prompt("Password:"); if(!password) return;
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) alert(error.message); else alert("Signed in!");
 });
 document.getElementById("signOutBtn").addEventListener("click", async ()=>{
   await supabase.auth.signOut(); state.user=null; save(state); setCloud("Not signed in");
+});
+// Create account (one-time)
+const signUpBtn = document.getElementById('signUpBtn');
+if (signUpBtn) signUpBtn.addEventListener('click', async ()=>{
+  const email = prompt('New account email:'); if(!email) return;
+  const password = prompt('New password (min 6 chars):'); if(!password) return;
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) alert(error.message);
+  else alert('Account created. You may need to verify email depending on project settings. Then use Sign in.');
 });
 supabase.auth.onAuthStateChange((_event, session)=>{
   if (session && session.user) { state.user = session.user; save(state); setCloud("Signed in"); queueSync(); }
