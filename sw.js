@@ -1,7 +1,6 @@
 self.addEventListener('install', (e)=>{
-  e.waitUntil(caches.open('wp-stats-cache-v6').then(c=>c.addAll([
-    './','./index.html','./manifest.json','./sw.js','./icon-192.png','./icon-512.png',
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+  e.waitUntil(caches.open('wp-stats-cache-v1').then(c=>c.addAll([
+    './','./index.html','./manifest.json','./sw.js','./icon-192.png','./icon-512.png'
   ])));
 });
 self.addEventListener('fetch', (event)=>{
