@@ -3,39 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-<title>Ryan WP Stats — Mira Costa</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d3b2e">
+<title>WP Stats — Ryan</title>
 <style>
-:root{
-  --brand:#0d3b2e;
-  --accent:#f2c200;
-  --card:#ffffff;
-  --line:#e9e9ef;
-  --bg:#f7f7f9;
-}
+:root{ --accent:#0b5; --bg:#f7f7f9; --card:#fff; --line:#e9e9ef; }
 *{ box-sizing:border-box; }
 body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; background:var(--bg); color:#111; }
-header{ position:sticky; top:0; z-index:5; background:var(--brand); color:#fff; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; }
-h1{ margin:0; font-size:18px; line-height:1.2; }
-.brand-sub{ font-size:12px; opacity:.9; }
-.top-actions{ display:flex; gap:8px; align-items:center; }
+header{ position:sticky; top:0; z-index:3; background:#fff; border-bottom:1px solid var(--line); padding:10px 12px; display:flex; align-items:center; justify-content:space-between; }
+h1{ margin:0; font-size:18px; }
 button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px; font-size:16px; }
 .btn-sm{ padding:8px 10px; font-size:14px; border-radius:10px; }
-.primary{ background:var(--accent); color:#111; border:none; }
+.primary{ background:var(--accent); color:#fff; border:none; }
 .danger{ background:#e33; color:#fff; border:none; }
-.hamburger{ background:transparent; border:none; width:40px; height:32px; position:relative; }
-.hamburger span, .hamburger::before, .hamburger::after{
-  content:""; position:absolute; left:8px; right:8px; height:3px; background:#fff; border-radius:2px;
-}
-.hamburger span{ top:50%; transform:translateY(-50%); }
-.hamburger::before{ top:8px; }
-.hamburger::after{ bottom:8px; }
-.menu{ position:absolute; right:8px; top:54px; background:#fff; border:1px solid #ddd; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); display:none; padding:8px; z-index:10; }
-.menu.open{ display:block; }
-.menu button, .menu label{ display:block; width:100%; text-align:left; margin:4px 0; }
-
-.tabs{ display:flex; position:sticky; top:52px; background:#fff; border-bottom:1px solid var(--line); z-index:4; }
+.tabs{ display:flex; position:sticky; top:48px; background:#fff; border-bottom:1px solid var(--line); }
 .tab{ flex:1; padding:12px; border:none; background:#fff; border-bottom:2px solid transparent; }
 .tab.active{ border-bottom-color:var(--accent); font-weight:600; }
 main{ padding:12px; }
@@ -49,62 +28,43 @@ main{ padding:12px; }
 .counter{ text-align:center; padding:12px; border:1px solid #ddd; border-radius:10px; background:#fff; font-size:18px; }
 .row{ padding:6px 0; border-bottom:1px solid #f1f1f4; }
 .row:last-child{ border-bottom:none; }
-.grid2{ display:grid; grid-template-columns:1fr; gap:10px; }
 .actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
 .fine{ color:#666; font-size:12px; }
 #notes{ width:100%; min-height:90px; padding:12px; border-radius:10px; border:1px solid #ddd; }
 table{ width:100%; border-collapse:collapse; }
 th, td{ padding:8px; border-bottom:1px solid #f0f0f0; text-align:left; }
 .right{ text-align:right; }
-
-@media (min-width:900px){
-  .menu{ display:none !important; }
-  .hamburger{ display:none; }
-  header .top-actions .desk{ display:inline-flex; }
-}
 @media (max-width:740px){
   .controls{ grid-template-columns: 1fr 78px 70px 78px; }
   button{ font-size:15px; }
-  header .top-actions .desk{ display:none; }
+  .meta{ grid-template-columns: 1fr; }
 }
-
 @media print{
-  header, .tabs, .menu, .hamburger, #record .actions .danger, #games .card button, #settings { display:none !important; }
+  header, .tabs, #record .actions .danger, #record .actions .primary, #games .card button, #season .actions, #settings { display:none !important; }
   body{ background:#fff; }
   .card{ border:none; }
 }
 </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b5">
 </head>
 <body>
 <header>
-  <div>
-    <h1>Ryan WP Stats</h1>
-    <div class="brand-sub">Mira Costa High School</div>
-  </div>
-  <div class="top-actions">
-    <button id="exportCSV" class="btn-sm desk">CSV</button>
-    <button id="exportJSON" class="btn-sm desk">Backup</button>
-    <label for="importJSON" class="btn-sm desk" style="border:1px solid #ddd; padding:8px 10px; border-radius:10px; cursor:pointer;">Import</label>
+  <h1>WP Stats — Ryan</h1>
+  <div class="actions">
+    <button id="exportCSV" class="btn-sm">CSV</button>
+    <button id="exportJSON" class="btn-sm">Backup</button>
+    <label for="importJSON" class="btn-sm" style="border:1px solid #ddd; padding:8px 10px; border-radius:10px; cursor:pointer;">Import</label>
     <input id="importJSON" type="file" accept=".json" style="display:none"/>
-    <button id="resetAll" class="btn-sm danger desk">Reset</button>
-
-    <button id="menuBtn" class="hamburger" aria-label="Menu"><span></span></button>
-    <div id="menu" class="menu">
-      <button id="m_exportCSV">Export CSV</button>
-      <button id="m_exportJSON">Backup (JSON)</button>
-      <label for="importJSON" style="padding:8px 10px; border:1px solid #ddd; border-radius:10px; cursor:pointer; margin:4px 0; display:block;">Import</label>
-      <button id="m_resetAll" class="danger">Reset</button>
-    </div>
+    <button id="resetAll" class="btn-sm danger">Reset</button>
   </div>
 </header>
-
 <nav class="tabs">
   <button class="tab active" data-tab="record">Record</button>
   <button class="tab" data-tab="games">Games</button>
   <button class="tab" data-tab="season">Season</button>
   <button class="tab" data-tab="settings">Settings</button>
 </nav>
-
 <main>
   <section id="record" class="panel active">
     <div class="card">
@@ -112,9 +72,7 @@ th, td{ padding:8px; border-bottom:1px solid #f0f0f0; text-align:left; }
         <input id="date" type="date"/>
         <input id="opponent" type="text" placeholder="Opponent"/>
       </div>
-
       <div id="rows"></div>
-
       <div class="card" style="margin-top:10px;">
         <div class="controls row"><div class="label">Points</div><div></div><div class="counter" id="points">0</div><div></div></div>
         <div class="controls row"><div class="label">Total Shots</div><div></div><div class="counter" id="shotsTotal">0</div><div></div></div>
@@ -122,12 +80,10 @@ th, td{ padding:8px; border-bottom:1px solid #f0f0f0; text-align:left; }
         <div class="controls row"><div class="label">Shot %</div><div></div><div class="counter" id="shotpct">-</div><div></div></div>
         <div class="fine" id="pctnote"></div>
       </div>
-
       <div style="margin-top:10px;">
         <label class="fine" for="notes">Notes</label>
         <textarea id="notes" placeholder="Game notes..."></textarea>
       </div>
-
       <div class="actions">
         <button id="undo" class="btn-sm">Undo</button>
         <button id="saveGame" class="primary">Save Game</button>
@@ -136,18 +92,11 @@ th, td{ padding:8px; border-bottom:1px solid #f0f0f0; text-align:left; }
       </div>
     </div>
   </section>
-
-  <section id="games" class="panel">
-    <div id="gamesList"></div>
-  </section>
-
+  <section id="games" class="panel"><div id="gamesList"></div></section>
   <section id="season" class="panel">
     <div id="seasonTotals" class="card"></div>
-    <div class="card" style="margin-top:10px;">
-      <canvas id="trend" height="220"></canvas>
-    </div>
+    <div class="card" style="margin-top:10px;"><canvas id="trend" height="220"></canvas></div>
   </section>
-
   <section id="settings" class="panel">
     <div class="card">
       <h3>Settings</h3>
@@ -156,364 +105,57 @@ th, td{ padding:8px; border-bottom:1px solid #f0f0f0; text-align:left; }
     </div>
   </section>
 </main>
-
 <script>
-const menuBtn = document.getElementById("menuBtn");
-const menu = document.getElementById("menu");
-menuBtn.addEventListener("click", ()=> menu.classList.toggle("open"));
-document.addEventListener("click", (e)=>{
-  if(!menu.contains(e.target) && e.target!==menuBtn) menu.classList.remove("open");
-});
-document.getElementById("m_exportCSV").addEventListener("click", ()=>document.getElementById("exportCSV").click());
-document.getElementById("m_exportJSON").addEventListener("click", ()=>document.getElementById("exportJSON").click());
-document.getElementById("m_resetAll").addEventListener("click", ()=>document.getElementById("resetAll").click());
-
-const LS_KEY = "wp_ryan_stats_v1";
-const DRAFT_KEY = "wp_ryan_stats_v1_draft";
-
-const statDefs = [
-  { key:"shot", label:"Shot" },
-  { key:"goal", label:"Goal" },
-  { key:"assist", label:"Assist" },
-  { key:"steal", label:"Steal" },
-  { key:"block", label:"Block" },
-  { key:"five_m_attempt", label:"5M Attempt" },
-  { key:"five_m_goal", label:"5M Goal" },
-  { key:"five_m_drawn", label:"5M Drawn" },
-  { key:"exclusion", label:"Exclusion" },
-  { key:"exclusion_drawn", label:"Exclusion Drawn" }
+const LS_KEY="wp_ryan_stats_v1", DRAFT_KEY="wp_ryan_stats_v1_draft";
+const statDefs=[
+  {key:"shot",label:"Shot"},
+  {key:"goal",label:"Goal"},
+  {key:"assist",label:"Assist"},
+  {key:"steal",label:"Steal"},
+  {key:"block",label:"Block"},
+  {key:"five_m_attempt",label:"5M Attempt"},
+  {key:"five_m_goal",label:"5M Goal"},
+  {key:"five_m_drawn",label:"5M Drawn"},
+  {key:"exclusion",label:"Exclusion"},
+  {key:"exclusion_drawn",label:"Exclusion Drawn"}
 ];
-
-function today(){ return new Date().toISOString().slice(0,10); }
-
-function blankGame(){
-  const g = { date: today(), opponent:"", notes:"", stats:{} };
-  statDefs.forEach(s=>g.stats[s.key]=0);
-  return g;
-}
-
-function load(){
-  try{ return JSON.parse(localStorage.getItem(LS_KEY)) || {games:[], settings:{pctMode:false}}; }
-  catch{ return {games:[], settings:{pctMode:false}}; }
-}
-function save(state){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
-function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)) || null; }catch{return null;} }
-function saveDraft(){ localStorage.setItem(DRAFT_KEY, JSON.stringify(current)); }
-
-let state = load();
-let current = loadDraft() || blankGame();
-let undoStack = [];
-
-document.querySelectorAll(".tab").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.tab).classList.add("active");
-    if(btn.dataset.tab==="games") renderGames();
-    if(btn.dataset.tab==="season") { renderSeason(); drawTrend(); }
-    if(btn.dataset.tab==="settings") { document.getElementById("pctMode").checked = !!state.settings.pctMode; }
-  });
-});
-
-const rowsDiv = document.getElementById("rows");
-function buildRows(){
-  rowsDiv.innerHTML = "";
-  statDefs.forEach(s=>{
-    const row = document.createElement("div");
-    row.className = "row controls";
-    row.innerHTML = `
-      <div class="label">${s.label}</div>
-      <button class="dec" data-k="${s.key}">−</button>
-      <div class="counter" id="c_${s.key}">0</div>
-      <button class="inc" data-k="${s.key}">+</button>
-    `;
-    rowsDiv.appendChild(row);
-  });
-  rowsDiv.querySelectorAll(".inc").forEach(b=>b.addEventListener("click", ()=>inc(b.dataset.k)));
-  rowsDiv.querySelectorAll(".dec").forEach(b=>b.addEventListener("click", ()=>dec(b.dataset.k)));
-}
+function today(){return new Date().toISOString().slice(0,10);}
+function blankGame(){const g={date:today(),opponent:"",notes:"",stats:{}};statDefs.forEach(s=>g.stats[s.key]=0);return g;}
+function load(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{games:[],settings:{pctMode:false}}}catch{return {games:[],settings:{pctMode:false}}}}
+function save(s){localStorage.setItem(LS_KEY,JSON.stringify(s))}
+function loadDraft(){try{return JSON.parse(localStorage.getItem(DRAFT_KEY))||null}catch{return null}}
+function saveDraft(){localStorage.setItem(DRAFT_KEY,JSON.stringify(current))}
+let state=load();let current=loadDraft()||blankGame();let undoStack=[];
+document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");document.getElementById(btn.dataset.tab).classList.add("active");if(btn.dataset.tab==="games")renderGames();if(btn.dataset.tab==="season"){renderSeason();drawTrend();}if(btn.dataset.tab==="settings"){document.getElementById("pctMode").checked=!!state.settings.pctMode;}}));
+const rowsDiv=document.getElementById("rows");
+function buildRows(){rowsDiv.innerHTML="";statDefs.forEach(s=>{const row=document.createElement("div");row.className="row controls";row.innerHTML=`<div class="label">${s.label}</div><button class="dec" data-k="${s.key}">−</button><div class="counter" id="c_${s.key}">0</div><button class="inc" data-k="${s.key}">+</button>`;rowsDiv.appendChild(row)});rowsDiv.querySelectorAll(".inc").forEach(b=>b.addEventListener("click",()=>inc(b.dataset.k)));rowsDiv.querySelectorAll(".dec").forEach(b=>b.addEventListener("click",()=>dec(b.dataset.k)));}
 buildRows();
-
-const dateEl = document.getElementById("date");
-const oppEl = document.getElementById("opponent");
-const notesEl = document.getElementById("notes");
-dateEl.value = current.date;
-oppEl.value = current.opponent;
-notesEl.value = current.notes || "";
-dateEl.addEventListener("change", ()=>{ current.date = dateEl.value; saveDraft(); });
-oppEl.addEventListener("input", ()=>{ current.opponent = oppEl.value; saveDraft(); });
-notesEl.addEventListener("input", ()=>{ current.notes = notesEl.value; saveDraft(); });
-
-function pct(goals, shots, mode){
-  if(!shots || shots<=0) return "-";
-  return (mode ? (shots/goals) : (goals/shots)).toFixed(2);
-}
-
-function renderCurrent(){
-  statDefs.forEach(s => {
-    document.getElementById("c_"+s.key).textContent = current.stats[s.key];
-  });
-  const goals = current.stats.goal;
-  const shots = current.stats.shot;
-  const assists = current.stats.assist;
-  const points = goals + assists;
-  document.getElementById("points").textContent = points;
-  document.getElementById("shotpct").textContent = pct(goals, shots, state.settings.pctMode);
-  document.getElementById("shotsTotal").textContent = shots;
-  document.getElementById("goalsTotal").textContent = goals;
-  document.getElementById("pctnote").textContent = state.settings.pctMode ? "Shot% = shots / goals" : "Shot% = goals / shots (standard)";
-}
+const dateEl=document.getElementById("date"),oppEl=document.getElementById("opponent"),notesEl=document.getElementById("notes");
+dateEl.value=current.date;oppEl.value=current.opponent;notesEl.value=current.notes||"";
+dateEl.addEventListener("change",()=>{current.date=dateEl.value;saveDraft()});oppEl.addEventListener("input",()=>{current.opponent=oppEl.value;saveDraft()});notesEl.addEventListener("input",()=>{current.notes=notesEl.value;saveDraft()});
+function pct(goals,shots,mode){if(!shots||shots<=0)return "-";return (mode?(shots/goals):(goals/shots)).toFixed(2)}
+function renderCurrent(){statDefs.forEach(s=>{document.getElementById("c_"+s.key).textContent=current.stats[s.key]});const goals=current.stats.goal,shots=current.stats.shot,assists=current.stats.assist,points=goals+assists;document.getElementById("points").textContent=points;document.getElementById("shotpct").textContent=pct(goals,shots,state.settings.pctMode);document.getElementById("shotsTotal").textContent=shots;document.getElementById("goalsTotal").textContent=goals;document.getElementById("pctnote").textContent=state.settings.pctMode?"Shot% = shots / goals":"Shot% = goals / shots (standard)";}
 renderCurrent();
-
-function pushUndo(snapshot){
-  undoStack.push(snapshot);
-  if(undoStack.length>100) undoStack.shift();
-}
-
-function inc(k){
-  pushUndo(JSON.parse(JSON.stringify(current)));
-  current.stats[k]++;
-  if(k==="five_m_attempt"){ current.stats.shot++; }
-  if(k==="five_m_goal"){ current.stats.goal++; current.stats.shot++; }
-  renderCurrent(); saveDraft();
-}
-function dec(k){
-  pushUndo(JSON.parse(JSON.stringify(current)));
-  if(current.stats[k]>0) current.stats[k]--;
-  if(k==="five_m_attempt" && current.stats.shot>0){ current.stats.shot--; }
-  if(k==="five_m_goal"){
-    if(current.stats.goal>0) current.stats.goal--;
-    if(current.stats.shot>0) current.stats.shot--;
-  }
-  renderCurrent(); saveDraft();
-}
-
-document.getElementById("undo").addEventListener("click", ()=>{
-  if(!undoStack.length) return;
-  current = undoStack.pop();
-  dateEl.value = current.date;
-  oppEl.value = current.opponent;
-  notesEl.value = current.notes || "";
-  renderCurrent(); saveDraft();
-});
-
-document.getElementById("saveGame").addEventListener("click", ()=>{
-  const snap = JSON.parse(JSON.stringify(current));
-  state.games.unshift(snap);
-  save(state);
-  localStorage.removeItem(DRAFT_KEY);
-  alert("Game saved.");
-  renderGames(); renderSeason();
-});
-document.getElementById("newGame").addEventListener("click", ()=>{
-  const hasData = Object.values(current.stats).some(v=>v>0) || current.opponent || (current.notes||"").trim();
-  if(hasData && !confirm("Start a new game? Unsaved changes will be lost.")) return;
-  current = blankGame();
-  undoStack = [];
-  dateEl.value = current.date;
-  oppEl.value = "";
-  notesEl.value = "";
-  renderCurrent(); saveDraft();
-});
-document.getElementById("print").addEventListener("click", ()=>window.print());
-
-function renderGames(){
-  const wrap = document.getElementById("gamesList");
-  wrap.innerHTML = "";
-  if(!state.games.length){ wrap.innerHTML = "<div class='card'>No games yet.</div>"; return; }
-  state.games.forEach((g, idx)=>{
-    const goals = g.stats.goal, shots = g.stats.shot, assists = g.stats.assist;
-    const points = goals + assists;
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-        <strong>${g.date} — ${g.opponent || "Opponent"}</strong>
-        <div>
-          <button class="btn-sm" data-edit="${idx}">Edit</button>
-          <button class="btn-sm danger" data-del="${idx}">Delete</button>
-        </div>
-      </div>
-      <table>
-        <tbody>
-          ${statDefs.map(s=>`<tr><td>${s.label}</td><td class="right">${g.stats[s.key]}</td></tr>`).join("")}
-          <tr><td>Points</td><td class="right">${points}</td></tr>
-          <tr><td>Shot %</td><td class="right">${pct(goals, shots, state.settings.pctMode)}</td></tr>
-        </tbody>
-      </table>
-      ${g.notes ? `<div class="fine">Notes: ${escapeHtml(g.notes)}</div>` : ""}
-    `;
-    wrap.appendChild(div);
-  });
-  wrap.querySelectorAll("[data-del]").forEach(btn=>btn.addEventListener("click", ()=>{
-    const i = +btn.dataset.del;
-    if(!confirm("Delete this game?")) return;
-    state.games.splice(i,1); save(state); renderGames(); renderSeason();
-  }));
-  wrap.querySelectorAll("[data-edit]").forEach(btn=>btn.addEventListener("click", ()=>{
-    const i = +btn.dataset.edit;
-    const g = state.games[i];
-    if(!g) return;
-    if(!confirm("Load this game into the editor? Current draft will be replaced.")) return;
-    current = JSON.parse(JSON.stringify(g));
-    undoStack = [];
-    dateEl.value = current.date;
-    oppEl.value = current.opponent;
-    notesEl.value = current.notes || "";
-    renderCurrent(); saveDraft();
-    document.querySelector('.tab.active').classList.remove('active');
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    document.getElementById('record').classList.add('active');
-    document.querySelector('.tab[data-tab="record"]').classList.add('active');
-  }));
-}
-
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-
-function renderSeason(){
-  const agg = {}; statDefs.forEach(s=>agg[s.key]=0);
-  let gsum=0, ssum=0, asum=0;
-  state.games.forEach(g=>{ statDefs.forEach(s=>agg[s.key]+=g.stats[s.key]||0); });
-  gsum = agg.goal; ssum = agg.shot; asum = agg.assist;
-  const html = `
-    <h3>Season Totals</h3>
-    <table>
-      <tbody>
-        ${statDefs.map(s=>`<tr><th>${s.label}</th><td class="right">${agg[s.key]}</td></tr>`).join("")}
-        <tr><th>Points</th><td class="right">${gsum + asum}</td></tr>
-        <tr><th>Shot %</th><td class="right">${pct(gsum, ssum, state.settings.pctMode)}</td></tr>
-      </tbody>
-    </table>`;
-  document.getElementById("seasonTotals").innerHTML = html;
-}
-
-function drawTrend(){
-  const canvas = document.getElementById("trend");
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
-  const h = canvas.height = 220 * (window.devicePixelRatio || 1);
-  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-  ctx.clearRect(0,0,canvas.clientWidth,220);
-
-  const labels = state.games.slice().reverse().map(g=>g.opponent || g.date || "");
-  const goals = state.games.slice().reverse().map(g=>g.stats.goal||0);
-  const shots = state.games.slice().reverse().map(g=>g.stats.shot||0);
-
-  const pad = {l:32, r:10, t:10, b:24};
-  const plotW = canvas.clientWidth - pad.l - pad.r;
-  const plotH = 220 - pad.t - pad.b;
-  const maxY = Math.max(5, ...goals, ...shots);
-
-  ctx.strokeStyle = "#ccc";
-  ctx.beginPath();
-  ctx.moveTo(pad.l, pad.t);
-  ctx.lineTo(pad.l, pad.t+plotH);
-  ctx.lineTo(pad.l+plotW, pad.t+plotH);
-  ctx.stroke();
-
-  ctx.fillStyle = "#666";
-  ctx.font = "12px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial";
-  const steps = Math.min(5, maxY);
-  for(let i=0;i<=steps;i++){
-    const yv = Math.round(i*maxY/steps);
-    const y = pad.t + plotH - (yv/maxY)*plotH;
-    ctx.fillText(String(yv), 4, y+4);
-    ctx.strokeStyle="#eee"; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+plotW, y); ctx.stroke();
-  }
-
-  function line(data){
-    ctx.beginPath();
-    data.forEach((v,i)=>{
-      const x = pad.l + (i*(plotW/Math.max(1, data.length-1)));
-      const y = pad.t + plotH - (v/maxY)*plotH;
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-  }
-
-  ctx.strokeStyle = "#f2c200"; ctx.lineWidth = 2; line(goals);
-  ctx.strokeStyle = "#0d3b2e"; ctx.lineWidth = 2; line(shots);
-
-  ctx.fillStyle = "#111"; ctx.fillText("Goals", pad.l+6, pad.t+12);
-  ctx.fillStyle = "#111"; ctx.fillText("Shots", pad.l+70, pad.t+12);
-  ctx.strokeStyle = "#f2c200"; ctx.beginPath(); ctx.moveTo(pad.l, pad.t+8); ctx.lineTo(pad.l+40, pad.t+8); ctx.stroke();
-  ctx.strokeStyle = "#0d3b2e"; ctx.beginPath(); ctx.moveTo(pad.l+60, pad.t+8); ctx.lineTo(pad.l+100, pad.t+8); ctx.stroke();
-
-  ctx.fillStyle="#666";
-  const n = labels.length;
-  const tickEvery = n>8 ? Math.ceil(n/8) : 1;
-  for(let i=0;i<n;i+=tickEvery){
-    const x = pad.l + (i*(plotW/Math.max(1,n-1)));
-    ctx.fillText(String(i+1), x-3, pad.t+plotH+16);
-  }
-}
-
-document.getElementById("pctMode").addEventListener("change",(e)=>{
-  state.settings.pctMode = !!e.target.checked;
-  save(state); renderCurrent(); renderGames(); renderSeason();
-});
-
-function toCSV(){
-  const headers = ["date","opponent","notes"]
-    .concat(statDefs.map(s=>s.label.replace(/,/g,"")))
-    .concat(["Points","ShotPct"]);
-  const rows = [headers.join(",")];
-  state.games.forEach(g=>{
-    const goals = g.stats.goal, shots = g.stats.shot, assists = g.stats.assist;
-    const points = goals + assists;
-    const shotpct = pct(goals, shots, state.settings.pctMode);
-    const cols = [g.date, (g.opponent||""), (g.notes||"").replace(/
-/g," ").replace(/,/g,";)")]
-      .concat(statDefs.map(s=>g.stats[s.key]||0))
-      .concat([points, shotpct]);
-    rows.push(cols.join(","));
-  });
-  return rows.join("
-");
-}
-
-function downloadBlob(content, name, type){
-  const blob = new Blob([content], {type:type});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url; a.download = name; a.click();
-  URL.revokeObjectURL(url);
-}
-document.getElementById("exportCSV").addEventListener("click", ()=>downloadBlob(toCSV(),"ryan_wp_stats.csv","text/csv;charset=utf-8"));
-document.getElementById("exportJSON").addEventListener("click", ()=>downloadBlob(JSON.stringify(state,null,2),"ryan_wp_backup.json","application/json"));
-
-document.getElementById("importJSON").addEventListener("change",(e)=>{
-  const f = e.target.files[0]; if(!f) return;
-  const r = new FileReader();
-  r.onload = ()=>{
-    try{
-      const obj = JSON.parse(r.result);
-      if(!obj || typeof obj!=="object" || !Array.isArray(obj.games)) throw new Error("Invalid backup");
-      state = obj;
-      save(state);
-      alert("Imported.");
-      renderGames(); renderSeason(); drawTrend(); renderCurrent();
-    }catch(err){ alert("Import failed: "+err.message); }
-  };
-  r.readAsText(f);
-});
-
-function doReset(){
-  if(!confirm("Erase ALL data on this device?")) return;
-  state = {games:[], settings:{pctMode:false}};
-  save(state);
-  localStorage.removeItem(DRAFT_KEY);
-  current = blankGame(); undoStack = [];
-  dateEl.value = current.date; oppEl.value=""; notesEl.value="";
-  renderCurrent(); renderGames(); renderSeason(); drawTrend();
-}
-document.getElementById("resetAll").addEventListener("click", doReset);
-
-// initial renders
-renderGames(); renderSeason(); drawTrend();
+function pushUndo(snap){undoStack.push(snap);if(undoStack.length>100)undoStack.shift()}
+function inc(k){pushUndo(JSON.parse(JSON.stringify(current)));current.stats[k]++;if(k==="five_m_attempt"){current.stats.shot++}if(k==="five_m_goal"){current.stats.goal++;current.stats.shot++}renderCurrent();saveDraft()}
+function dec(k){pushUndo(JSON.parse(JSON.stringify(current)));if(current.stats[k]>0)current.stats[k]--;if(k==="five_m_attempt"&&current.stats.shot>0){current.stats.shot--}if(k==="five_m_goal"){if(current.stats.goal>0)current.stats.goal--;if(current.stats.shot>0)current.stats.shot--}renderCurrent();saveDraft()}
+document.getElementById("undo").addEventListener("click",()=>{if(!undoStack.length)return;current=undoStack.pop();dateEl.value=current.date;oppEl.value=current.opponent;notesEl.value=current.notes||"";renderCurrent();saveDraft()});
+document.getElementById("saveGame").addEventListener("click",()=>{const snap=JSON.parse(JSON.stringify(current));state.games.unshift(snap);save(state);localStorage.removeItem(DRAFT_KEY);alert("Game saved.");renderGames();renderSeason()});
+document.getElementById("newGame").addEventListener("click",()=>{const hasData=Object.values(current.stats).some(v=>v>0)||current.opponent||(current.notes||"").trim();if(hasData&&!confirm("Start a new game? Unsaved changes will be lost."))return;current=blankGame();undoStack=[];dateEl.value=current.date;oppEl.value="";notesEl.value="";renderCurrent();saveDraft()});
+document.getElementById("print").addEventListener("click",()=>window.print());
+function renderGames(){const wrap=document.getElementById("gamesList");wrap.innerHTML="";if(!state.games.length){wrap.innerHTML="<div class='card'>No games yet.</div>";return}state.games.forEach((g,idx)=>{const goals=g.stats.goal,shots=g.stats.shot,assists=g.stats.assist,points=goals+assists;const div=document.createElement("div");div.className="card";div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><strong>${g.date} — ${g.opponent||"Opponent"}</strong><div><button class="btn-sm" data-edit="${idx}">Edit</button><button class="btn-sm danger" data-del="${idx}">Delete</button></div></div><table><tbody>${statDefs.map(s=>`<tr><td>${s.label}</td><td class="right">${g.stats[s.key]}</td></tr>`).join("")}<tr><td>Points</td><td class="right">${points}</td></tr><tr><td>Shot %</td><td class="right">${pct(goals, shots, state.settings.pctMode)}</td></tr></tbody></table>${g.notes?`<div class="fine">Notes: ${escapeHtml(g.notes)}</div>`:""}`;wrap.appendChild(div)});wrap.querySelectorAll("[data-del]").forEach(btn=>btn.addEventListener("click",()=>{const i=+btn.dataset.del;if(!confirm("Delete this game?"))return;state.games.splice(i,1);save(state);renderGames();renderSeason()}));wrap.querySelectorAll("[data-edit]").forEach(btn=>btn.addEventListener("click",()=>{const i=+btn.dataset.edit;const g=state.games[i];if(!g)return;if(!confirm("Load this game into the editor? Current draft will be replaced."))return;current=JSON.parse(JSON.stringify(g));undoStack=[];dateEl.value=current.date;oppEl.value=current.opponent;notesEl.value=current.notes||"";renderCurrent();saveDraft();document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelector('.tab[data-tab="record"]').classList.add('active');document.getElementById('record').classList.add('active');}))}
+function escapeHtml(str){return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]))}
+function renderSeason(){const agg={};statDefs.forEach(s=>agg[s.key]=0);let gsum=0,ssum=0,asum=0;state.games.forEach(g=>{statDefs.forEach(s=>agg[s.key]+=g.stats[s.key]||0)});gsum=agg.goal;ssum=agg.shot;asum=agg.assist;const html=`<h3>Season Totals</h3><table><tbody>${statDefs.map(s=>`<tr><th>${s.label}</th><td class="right">${agg[s.key]}</td></tr>`).join("")}<tr><th>Points</th><td class="right">${gsum+asum}</td></tr><tr><th>Shot %</th><td class="right">${pct(gsum,ssum,state.settings.pctMode)}</td></tr></tbody></table>`;document.getElementById("seasonTotals").innerHTML=html}
+function drawTrend(){const canvas=document.getElementById("trend");const ctx=canvas.getContext("2d");const w=canvas.width=canvas.clientWidth*(window.devicePixelRatio||1);const h=canvas.height=220*(window.devicePixelRatio||1);ctx.scale(window.devicePixelRatio||1,window.devicePixelRatio||1);ctx.clearRect(0,0,canvas.clientWidth,220);const labels=state.games.slice().reverse().map(g=>g.opponent||g.date||"");const goals=state.games.slice().reverse().map(g=>g.stats.goal||0);const shots=state.games.slice().reverse().map(g=>g.stats.shot||0);const pad={l:32,r:10,t:10,b:24};const plotW=canvas.clientWidth-pad.l-pad.r;const plotH=220-pad.t-pad.b;const maxY=Math.max(5,...goals,...shots);ctx.strokeStyle="#ccc";ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,pad.t+plotH);ctx.lineTo(pad.l+plotW,pad.t+plotH);ctx.stroke();ctx.fillStyle="#666";ctx.font="12px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial";const steps=Math.min(5,maxY);for(let i=0;i<=steps;i++){const yv=Math.round(i*maxY/steps);const y=pad.t+plotH-(yv/maxY)*plotH;ctx.fillText(String(yv),4,y+4);ctx.strokeStyle="#eee";ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+plotW,y);ctx.stroke()}function line(data){ctx.beginPath();data.forEach((v,i)=>{const x=pad.l+(i*(plotW/Math.max(1,data.length-1)));const y=pad.t+plotH-(v/maxY)*plotH;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke()}ctx.strokeStyle="#1f7a1f";ctx.lineWidth=2;line(goals);ctx.strokeStyle="#1f4f7a";ctx.lineWidth=2;line(shots);ctx.fillStyle="#111";ctx.fillText("Goals",pad.l+6,pad.t+12);ctx.fillStyle="#111";ctx.fillText("Shots",pad.l+70,pad.t+12);ctx.strokeStyle="#1f7a1f";ctx.beginPath();ctx.moveTo(pad.l,pad.t+8);ctx.lineTo(pad.l+40,pad.t+8);ctx.stroke();ctx.strokeStyle="#1f4f7a";ctx.beginPath();ctx.moveTo(pad.l+60,pad.t+8);ctx.lineTo(pad.l+100,pad.t+8);ctx.stroke();ctx.fillStyle="#666";const n=labels.length;const tickEvery=n>8?Math.ceil(n/8):1;for(let i=0;i<n;i+=tickEvery){const x=pad.l+(i*(plotW/Math.max(1,n-1)));ctx.fillText(String(i+1),x-3,pad.t+plotH+16)}}
+document.getElementById("pctMode").addEventListener("change",(e)=>{state.settings.pctMode=!!e.target.checked;save(state);renderCurrent();renderGames();renderSeason()});
+function toCSV(){const headers=["date","opponent","notes"].concat(statDefs.map(s=>s.label.replace(/,/g,""))).concat(["Points","ShotPct"]);const rows=[headers.join(",")];state.games.forEach(g=>{const goals=g.stats.goal,shots=g.stats.shot,assists=g.stats.assist,points=goals+assists,shotpct=pct(goals,shots,state.settings.pctMode);const cols=[g.date,(g.opponent||""),(g.notes||"").replace(/\n/g," ").replace(/,/g,";")].concat(statDefs.map(s=>g.stats[s.key]||0)).concat([points,shotpct]);rows.push(cols.join(","))});return rows.join("\n")}
+document.getElementById("exportCSV").addEventListener("click",()=>{const blob=new Blob([toCSV()],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="ryan_wp_stats.csv";a.click();URL.revokeObjectURL(url)});
+document.getElementById("exportJSON").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="ryan_wp_backup.json";a.click();URL.revokeObjectURL(url)});
+document.getElementById("importJSON").addEventListener("change",(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const obj=JSON.parse(r.result);if(!obj||typeof obj!=="object"||!Array.isArray(obj.games))throw new Error("Invalid backup");state=obj;save(state);alert("Imported.");renderGames();renderSeason();drawTrend();renderCurrent()}catch(err){alert("Import failed: "+err.message)}};r.readAsText(f)});
+document.getElementById("resetAll").addEventListener("click",()=>{if(!confirm("Erase ALL data on this device?"))return;state={games:[],settings:{pctMode:false}};save(state);localStorage.removeItem(DRAFT_KEY);current=blankGame();undoStack=[];dateEl.value=current.date;oppEl.value="";notesEl.value="";renderCurrent();renderGames();renderSeason();drawTrend()});
+renderGames();renderSeason();drawTrend();
 </script>
+
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
