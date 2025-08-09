@@ -45,7 +45,7 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
 
 /* Timer */
 .timer{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
-.timer .time{ font-weight:700; font-variant-numeric: tabular-nums; padding:8px 12px; border-radius:10px; border:1px solid #ddd; background:#fff; }
+.timer .time{ font-weight:700; font-variant-numeric: tabular-nums; padding:8px 12px; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer; }
 .timer .label{ font-weight:600; }
 #ptToggle.running{ background:var(--gold); color:#111; border:none; }
 
@@ -103,7 +103,7 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
       </div>
 
       <!-- Playing Time Timer -->
-      <div class="timer">
+      <div class="timer" title="Tap time to edit mm:ss">
         <div class="label">Playing Time</div>
         <div id="ptTime" class="time">00:00</div>
         <button id="ptToggle" class="btn-sm">Start</button>
@@ -170,7 +170,10 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
       <h3>Settings</h3>
       <label><input type="checkbox" id="pctMode"> Use Shot% = shots / goals (non-standard)</label>
       <p class="fine">Default is the standard: Shot% = goals / shots.</p>
-      <p class="fine">Supabase magic link will redirect back to this page automatically.</p>
+      <label style="display:block;margin-top:10px;">
+        <input type="checkbox" id="autoSaveCSV"> Auto-save game CSV to device after Save
+      </label>
+      <p class="fine">On iPhone, look in the Files app (Downloads/iCloud Drive). Filename includes date + opponent.</p>
     </div>
   </section>
 </main>
@@ -190,8 +193,8 @@ const supabase = window.supabase.createClient("https://hlcxhyrdumxfrlqgkcvf.supa
 </script>
 
 <script>
-const LS_KEY = "wp_supabase_trends_timer_v2d";
-const DRAFT_KEY = "wp_supabase_trends_timer_v2d_draft";
+const LS_KEY = "wp_supabase_timer_v2f";
+const DRAFT_KEY = "wp_supabase_timer_v2f_draft";
 
 const statDefs = [
   { key:"shot", label:"Shot" },
@@ -212,7 +215,7 @@ function blankGame(){
   statDefs.forEach(s => g.stats[s.key] = 0);
   return g;
 }
-function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || {games:[], settings:{pctMode:false}, user:null}; }catch{ return {games:[], settings:{pctMode:false}, user:null}; } }
+function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || {games:[], settings:{pctMode:false, autoSaveCSV:false}, user:null}; }catch{ return {games:[], settings:{pctMode:false, autoSaveCSV:false}, user:null}; } }
 function save(state){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
 function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)) || null; }catch{ return null; } }
 function saveDraft(){ localStorage.setItem(DRAFT_KEY, JSON.stringify(current)); }
@@ -233,7 +236,10 @@ document.querySelectorAll(".tab").forEach(btn=>{
     if(btn.dataset.tab==="games") renderGames();
     if(btn.dataset.tab==="season") renderSeason();
     if(btn.dataset.tab==="trends") drawTrends();
-    if(btn.dataset.tab==="settings") document.getElementById("pctMode").checked = !!state.settings.pctMode;
+    if(btn.dataset.tab==="settings") {
+      document.getElementById("pctMode").checked = !!state.settings.pctMode;
+      document.getElementById("autoSaveCSV").checked = !!state.settings.autoSaveCSV;
+    }
   });
 });
 
@@ -280,6 +286,12 @@ function fmtTime(s){
   return String(m).padStart(2,'0') + ":" + String(sec).padStart(2,'0');
 }
 
+function parseMMSS(input){
+  const m = input.trim().match(/^([0-9]{1,2}):([0-5][0-9])$/);
+  if (!m) return null;
+  return parseInt(m[1],10)*60 + parseInt(m[2],10);
+}
+
 function tickTimer(){
   const now = Date.now();
   if (lastTick != null) {
@@ -308,6 +320,18 @@ function stopTimer(){
 }
 ptToggle.addEventListener("click", ()=>{ if(timerId) stopTimer(); else startTimer(); });
 ptReset.addEventListener("click", ()=>{ if(timerId) stopTimer(); current.pt_seconds = 0; ptTimeEl.textContent = fmtTime(0); saveDraft(); });
+
+// Tap-to-edit Playing Time
+ptTimeEl.addEventListener("click", ()=>{
+  const val = prompt("Enter playing time (mm:ss):", fmtTime(current.pt_seconds||0));
+  if (!val) return;
+  const secs = parseMMSS(val);
+  if (secs == null) { alert("Please enter mm:ss (e.g., 07:32)"); return; }
+  if (timerId) stopTimer();
+  current.pt_seconds = secs;
+  ptTimeEl.textContent = fmtTime(secs);
+  saveDraft();
+});
 
 // Seed fields
 dateEl.value = current.date;
@@ -366,6 +390,29 @@ document.getElementById("undo").addEventListener("click", ()=>{
   renderCurrent(); saveDraft();
 });
 
+// CSV helpers
+function gameToCSV(g){
+  const headers = ["date","opponent","notes","minutes"]
+    .concat(statDefs.map(s=>s.label.replace(/,/g,"")))
+    .concat(["Points","ShotPct"]);
+  const goals = g.stats.goal, shots = g.stats.shot, assists = g.stats.assist;
+  const points = goals + assists; const shotpct = (shots? (goals/shots).toFixed(2) : "-");
+  const mins = Math.round((g.pt_seconds||0)/60);
+  const cols = [g.date, (g.opponent||""), (g.notes||"").replace(/\n/g," ").replace(/,/g,";"), mins]
+    .concat(statDefs.map(s=>g.stats[s.key]||0))
+    .concat([points, shotpct]);
+  return headers.join(",") + "\n" + cols.join(",");
+}
+function downloadCSVForGame(g){
+  const csv = gameToCSV(g);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const fname = `ryan_wp_${g.date}_${(g.opponent||'opponent').replace(/\W+/g,'_')}.csv`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+}
+
 // Save/New/Print
 document.getElementById("saveGame").addEventListener("click", ()=>{
   const snap = JSON.parse(JSON.stringify(current));
@@ -374,8 +421,11 @@ document.getElementById("saveGame").addEventListener("click", ()=>{
   localStorage.removeItem(DRAFT_KEY);
   setCloud('Queueing…');
   queueSync();
-  alert("Game saved.");
   renderGames(); renderSeason();
+  if (state.settings.autoSaveCSV) {
+    downloadCSVForGame(snap);
+  }
+  alert("Game saved.");
 });
 document.getElementById("newGame").addEventListener("click", ()=>{
   const hasData = Object.values(current.stats).some(v=>v>0) || current.opponent || (current.notes||"").trim() || (current.pt_seconds>0);
@@ -399,6 +449,7 @@ function renderGames(){
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <strong>${g.date} — ${g.opponent || "Opponent"}</strong>
         <div>
+          <button class="btn-sm" data-dl="${idx}">Download CSV</button>
           <button class="btn-sm" data-edit="${idx}">Edit</button>
           <button class="btn-sm danger" data-del="${idx}">Delete</button>
         </div>
@@ -415,6 +466,9 @@ function renderGames(){
     `;
     wrap.appendChild(div);
   });
+  wrap.querySelectorAll("[data-dl]").forEach(btn=>btn.addEventListener("click", ()=>{
+    const g = state.games[+btn.dataset.dl]; downloadCSVForGame(g);
+  }));
   wrap.querySelectorAll("[data-del]").forEach(btn=>btn.addEventListener("click", ()=>{
     const i = +btn.dataset.del;
     if(!confirm("Delete this game?")) return;
@@ -497,6 +551,7 @@ function drawTrends(){
 
 // Settings
 document.getElementById("pctMode").addEventListener("change",(e)=>{ state.settings.pctMode = !!e.target.checked; save(state); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
+document.getElementById("autoSaveCSV").addEventListener("change",(e)=>{ state.settings.autoSaveCSV = !!e.target.checked; save(state); });
 
 // Export/Import/Reset
 function toCSV(){
@@ -518,7 +573,7 @@ function toCSV(){
 document.getElementById("exportCSV").addEventListener("click", ()=>{ const blob = new Blob([toCSV()],{type:"text/csv;charset=utf-8"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href=url; a.download="ryan_wp_stats.csv"; a.click(); URL.revokeObjectURL(url); });
 document.getElementById("exportJSON").addEventListener("click", ()=>{ const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"}); const url = URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="ryan_wp_backup.json"; a.click(); URL.revokeObjectURL(url); });
 document.getElementById("importJSON").addEventListener("change",(e)=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const obj=JSON.parse(r.result); if(!obj||typeof obj!=="object"||!Array.isArray(obj.games)) throw new Error("Invalid backup"); state=obj; save(state); alert("Imported."); renderGames(); renderSeason(); drawTrends(); renderCurrent(); }catch(err){ alert("Import failed: "+err.message); } }; r.readAsText(f); });
-document.getElementById("resetAll").addEventListener("click", ()=>{ if(!confirm("Erase ALL local data on this device?")) return; state = {games:[], settings:{pctMode:false}, user:null}; save(state); localStorage.removeItem(DRAFT_KEY); current = blankGame(); undoStack=[]; stopTimer(); dateEl.value=current.date; oppEl.value=""; notesEl.value=""; ptTimeEl.textContent=fmtTime(0); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
+document.getElementById("resetAll").addEventListener("click", ()=>{ if(!confirm("Erase ALL local data on this device?")) return; state = {games:[], settings:{pctMode:false, autoSaveCSV:false}, user:null}; save(state); localStorage.removeItem(DRAFT_KEY); current = blankGame(); undoStack=[]; stopTimer(); dateEl.value=current.date; oppEl.value=""; notesEl.value=""; ptTimeEl.textContent=fmtTime(0); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
 
 // Cloud status helpers
 const cloudStatus = document.getElementById("cloudStatus");
