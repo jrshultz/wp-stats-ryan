@@ -49,7 +49,7 @@ button{ border:1px solid #ddd; background:#fff; padding:12px; border-radius:12px
 .timer .label{ font-weight:600; }
 #ptToggle.running{ background:var(--gold); color:#111; border:none; }
 
-/* Trends canvas sizing fix */
+/* Trends canvas */
 #trendCanvas{ width:100%; display:block; background:#fff; border:1px solid #eee; border-radius:10px; }
 
 @media (max-width:740px){
@@ -200,8 +200,8 @@ const supabase = window.supabase.createClient("https://hlcxhyrdumxfrlqgkcvf.supa
 </script>
 
 <script>
-const LS_KEY = "wp_supabase_timer_v2g";
-const DRAFT_KEY = "wp_supabase_timer_v2g_draft";
+const LS_KEY = "wp_supabase_timer_v2h";
+const DRAFT_KEY = "wp_supabase_timer_v2h_draft";
 
 const statDefs = [
   { key:"shot", label:"Shot" },
@@ -426,18 +426,6 @@ function downloadCSVForGame(g){
   URL.revokeObjectURL(url);
 }
 
-function downloadSeasonTotalsCSV(totals){
-  const headers = ["Stat","Value"];
-  const rows = [];
-  for (const [k,v] of Object.entries(totals)) rows.push(`${k},${v}`);
-  const csv = headers.join(",") + "\n" + rows.join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "ryan_wp_season_totals.csv"; a.click();
-  URL.revokeObjectURL(url);
-}
-
 // Save/New/Print
 document.getElementById("saveGame").addEventListener("click", ()=>{
   const snap = JSON.parse(JSON.stringify(current));
@@ -519,7 +507,7 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 
-// Season totals (Avg Minutes/Game as mm:ss)
+// Season totals (Avg Minutes/Game as mm:ss) + download button
 function renderSeason(){
   const agg = {}; statDefs.forEach(s=>agg[s.key]=0);
   let gsum=0, ssum=0, asum=0, tsum=0;
@@ -533,7 +521,6 @@ function renderSeason(){
     Minutes: fmtTime(tsum),
     AvgMinutesPerGame: fmtTime(avgSec)
   };
-  // Pack per-stat too
   statDefs.forEach(s=> totals[s.label] = agg[s.key]);
 
   const html = `
@@ -549,10 +536,8 @@ function renderSeason(){
     </table>`;
   document.getElementById("seasonTotals").innerHTML = html;
 
-  // Wire button
   const btn = document.getElementById("dlSeasonTotals");
   btn.onclick = () => {
-    // build csv as two-column stat,value. Put core stats first.
     const order = [
       ...statDefs.map(s=>s.label),
       "Points","ShotPct","Minutes","AvgMinutesPerGame"
@@ -567,14 +552,13 @@ function renderSeason(){
   };
 }
 
-// Trends with robust sizing + empty state
+// Trends with markers
 function drawTrends(force=false){
   const cvs = document.getElementById("trendCanvas"); const ctx = cvs.getContext("2d");
   const empty = document.getElementById("trendEmpty");
   if (!state.games.length) { ctx.clearRect(0,0,cvs.width,cvs.height); empty.style.display="block"; return; }
   empty.style.display="none";
 
-  // Determine width safely
   let wCSS = cvs.getBoundingClientRect().width;
   if (!wCSS || wCSS < 10) wCSS = (cvs.parentElement?.clientWidth || 320);
   const hCSS = 260;
@@ -591,11 +575,11 @@ function drawTrends(force=false){
   const minutes = games.map(g=> Math.round((g.pt_seconds||0)/60));
 
   const series = [];
-  if (document.getElementById("t_goals").checked) series.push({name:"Goals", data:goals});
-  if (document.getElementById("t_shots").checked) series.push({name:"Shots", data:shots});
-  if (document.getElementById("t_points").checked) series.push({name:"Points", data:points});
-  if (document.getElementById("t_shotpct").checked) series.push({name:"Shot%", data:shotpct});
-  if (document.getElementById("t_minutes").checked) series.push({name:"Minutes", data:minutes});
+  if (document.getElementById("t_goals").checked) series.push({name:"Goals", data:goals, color:"#1f7a1f"});
+  if (document.getElementById("t_shots").checked) series.push({name:"Shots", data:shots, color:"#1f4f7a"});
+  if (document.getElementById("t_points").checked) series.push({name:"Points", data:points, color:"#7a1f3e"});
+  if (document.getElementById("t_shotpct").checked) series.push({name:"Shot%", data:shotpct, color:"#7a6a1f"});
+  if (document.getElementById("t_minutes").checked) series.push({name:"Minutes", data:minutes, color:"#3e1f7a"});
 
   const pad = {l:36, r:10, t:10, b:24};
   const plotW = wCSS - pad.l - pad.r; const plotH = hCSS - pad.t - pad.b;
@@ -604,9 +588,22 @@ function drawTrends(force=false){
   ctx.fillStyle="#666"; ctx.font="12px -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial";
   const steps = 5;
   for(let i=0;i<=steps;i++){ const yv=Math.round(i*maxY/steps*100)/100; const y=pad.t+plotH-(yv/maxY)*plotH; ctx.fillText(String(yv), 4, y+4); ctx.strokeStyle="#eee"; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+plotW,y); ctx.stroke(); }
-  function drawLine(data){ ctx.beginPath(); data.forEach((v,i)=>{ const x=pad.l+(i*(plotW/Math.max(1,data.length-1))); const y=pad.t+plotH-(v/maxY)*plotH; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke(); }
-  const colors = ["#1f7a1f","#1f4f7a","#7a1f3e","#7a6a1f","#3e1f7a"];
-  series.forEach((s,i)=>{ ctx.strokeStyle = colors[i%colors.length]; ctx.lineWidth=2; drawLine(s.data); ctx.fillStyle="#111"; ctx.fillText(s.name, pad.l+6+i*80, pad.t+12); ctx.strokeStyle=colors[i%colors.length]; ctx.beginPath(); ctx.moveTo(pad.l+i*70, pad.t+8); ctx.lineTo(pad.l+i*70+40, pad.t+8); ctx.stroke(); });
+
+  function xFor(i, n){ return pad.l+(i*(plotW/Math.max(1,n-1))); }
+  function yFor(v, max){ return pad.t+plotH-(v/max)*plotH; }
+
+  // Draw each series with markers
+  series.forEach((s,i)=>{
+    ctx.strokeStyle = s.color; ctx.lineWidth=2; ctx.beginPath();
+    s.data.forEach((v,idx)=>{ const x=xFor(idx,s.data.length); const y=yFor(v,maxY); if(idx===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.stroke();
+    // markers
+    ctx.fillStyle = s.color;
+    s.data.forEach((v,idx)=>{ const x=xFor(idx,s.data.length); const y=yFor(v,maxY); ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2); ctx.fill(); });
+    // legend
+    ctx.fillStyle="#111"; ctx.fillText(s.name, pad.l+6+i*80, pad.t+12);
+    ctx.strokeStyle=s.color; ctx.beginPath(); ctx.moveTo(pad.l+i*70, pad.t+8); ctx.lineTo(pad.l+i*70+40, pad.t+8); ctx.stroke();
+  });
 }
 ["t_goals","t_shots","t_points","t_shotpct","t_minutes"].forEach(id=>{ document.getElementById(id).addEventListener("change", drawTrends); });
 window.addEventListener("resize", ()=>drawTrends());
