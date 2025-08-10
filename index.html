@@ -329,35 +329,47 @@ oppEl.addEventListener('input',()=>{current.opponent=oppEl.value; saveDraft();})
 notesEl.addEventListener('input',()=>{current.notes=notesEl.value; saveDraft();});
 
 /* Derived UI */
-const pct=(g,s,mode)=>(!s||s<=0)?'-':(mode?(s/g):(g/s)).toFixed(2);
+const pct = (g, s, mode) => (!s || s <= 0) ? '-' : (mode ? (s / g) : (g / s)).toFixed(2);
+
 function renderCurrent(){
-  statDefs.forEach(s=>document.getElementById('c_'+s.key).textContent=current.stats[s.key]);
-  const goals=current.stats.goal, shots=current.stats.shot, assists=current.stats.assist;
-  document.getElementById('points').textContent=goals+assists;
-  document.getElementById('shotpct').textContent=pct(goals,shots,state.settings.pctMode);
-  document.getElementById('shotsTotal').textContent=shots;
-  document.getElementById('goalsTotal').textContent=goals;
-  document.getElementById('pctnote').textContent= state.settings.pctMode ? 'Shot% = shots / goals' : 'Shot% = goals / shots (standard)';
+  statDefs.forEach(s => {
+    document.getElementById('c_' + s.key).textContent = current.stats[s.key];
+  });
+  const goals = current.stats.goal, shots = current.stats.shot, assists = current.stats.assist;
+  document.getElementById('points').textContent = goals + assists;
+  document.getElementById('shotpct').textContent = pct(goals, shots, state.settings.pctMode);
+  document.getElementById('shotsTotal').textContent = shots;
+  document.getElementById('goalsTotal').textContent = goals;
+  document.getElementById('pctnote').textContent = state.settings.pctMode
+    ? 'Shot% = shots / goals'
+    : 'Shot% = goals / shots (standard)';
 }
 renderCurrent();
 
-/* Undo / +/- with goals<=shots rule */
-function pushUndo(s){ undoStack.push(s); if(undoStack.length>100) undoStack.shift(); }
+/* Undo / +/- with 5M coupling and goal ≤ shots rule */
+function pushUndo(s){
+  undoStack.push(s);
+  if (undoStack.length > 100) undoStack.shift();
+}
+
+function enforceGoalShotRule(){
+  if ((current.stats.goal || 0) > (current.stats.shot || 0)) {
+    current.stats.goal = current.stats.shot;
+  }
+}
 
 function inc(k){
   pushUndo(JSON.parse(JSON.stringify(current)));
-  // always bump the target stat
   current.stats[k] = (current.stats[k] || 0) + 1;
 
-  // coupled updates
   if (k === 'five_m_attempt') {
     current.stats.shot = (current.stats.shot || 0) + 1;
   } else if (k === 'five_m_goal') {
-    current.stats.five_m_goal = (current.stats.five_m_goal || 0); // just clarity
     current.stats.goal = (current.stats.goal || 0) + 1;
     current.stats.shot = (current.stats.shot || 0) + 1;
   }
 
+  enforceGoalShotRule();
   renderCurrent();
   saveDraft();
 }
@@ -373,13 +385,22 @@ function dec(k){
     if ((current.stats.shot || 0) > 0) current.stats.shot--;
   }
 
+  enforceGoalShotRule();
   renderCurrent();
   saveDraft();
 }
-  renderCurrent(); saveDraft();
-}
-document.getElementById('undo').addEventListener('click',()=>{ if(!undoStack.length)return; current=undoStack.pop(); dateEl.value=current.date; oppEl.value=current.opponent; notesEl.value=current.notes||''; ptTimeEl.textContent=fmtTime(current.pt_seconds||0); renderCurrent(); saveDraft(); });
 
+document.getElementById('undo').addEventListener('click', () => {
+  if (!undoStack.length) return;
+  current = undoStack.pop();
+  dateEl.value = current.date;
+  oppEl.value = current.opponent;
+  notesEl.value = current.notes || '';
+  ptTimeEl.textContent = fmtTime(current.pt_seconds || 0);
+  renderCurrent();
+  saveDraft();
+});
+  
 /* CSV helpers */
 function gameToCSV(g){
   const H=['date','opponent','notes','minutes','Shot','Goal','Assist','Steal','Block','5M Attempt','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct'];
