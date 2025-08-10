@@ -7,6 +7,8 @@
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#155e2e" />
   <style>
+    /* Trends canvas responsive */
+#trendCanvas { width:100%; height:240px; display:block; }
     :root{--green:#155e2e;--gold:#d4af37;--bg:#f7f7f9;--card:#fff;--line:#e9e9ef}
     *{box-sizing:border-box}
     body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial;background:var(--bg)}
@@ -382,33 +384,103 @@ function renderSeason(){
 }
 
 /* ---------------- Trends (lines + markers) ---------------- */
-function drawTrends(){
-  const cvs=document.getElementById('trendCanvas'), ctx=cvs.getContext('2d'), empty=document.getElementById('trendEmpty');
-  if(!state.games.length){ ctx.clearRect(0,0,cvs.width,cvs.height); if(empty) empty.style.display='block'; return; } if(empty) empty.style.display='none';
+function drawTrends() {
+  const cvs = document.getElementById('trendCanvas');
+  const ctx = cvs.getContext('2d');
+  const empty = document.getElementById('trendEmpty');
 
-  let w=cvs.getBoundingClientRect().width||320, h=260, dpr=window.devicePixelRatio||1;
-  cvs.width=Math.floor(w*dpr); cvs.height=Math.floor(h*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  if (!state.games.length) {
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
 
-  const games=state.games.slice().reverse();
-  const goals=games.map(g=>g.stats.goal||0), shots=games.map(g=>g.stats.shot||0), points=games.map(g=>(g.stats.goal||0)+(g.stats.assist||0)), minutes=games.map(g=>Math.round((g.pt_seconds||0)/60));
+  // --- responsive sizing ---
+  const cssRect = cvs.getBoundingClientRect();
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const w = Math.max(320, Math.floor(cssRect.width));   // don’t let it be tiny
+  const h = Math.floor(cssRect.height || 240);          // matches CSS height
+  cvs.width = Math.floor(w * dpr);
+  cvs.height = Math.floor(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
 
-  const series=[]; const add=(id,n,d,c)=>{ const el=document.getElementById(id); if(!el||!el.checked) return; series.push({name:n,data:d,color:c}); };
-  add('t_goals','Goals',goals,'#2e7d32'); add('t_shots','Shots',shots,'#1565c0'); add('t_points','Points',points,'#8e24aa'); add('t_minutes','Minutes',minutes,'#6d4c41');
+  // --- data prep (oldest->newest left->right) ---
+  const games   = state.games.slice().reverse();
+  const goals   = games.map(g => g.stats.goal   || 0);
+  const shots   = games.map(g => g.stats.shot   || 0);
+  const points  = games.map(g => (g.stats.goal||0) + (g.stats.assist||0));
+  const minutes = games.map(g => Math.round((g.pt_seconds||0)/60));
 
-  const pad={l:36,r:10,t:10,b:24}, pw=w-pad.l-pad.r, ph=h-pad.t-pad.b; const maxY=Math.max(5,...series.flatMap(s=>s.data));
-  ctx.strokeStyle='#ccc'; ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
+  const series = [];
+  const add = (id, name, data, color) => {
+    const el = document.getElementById(id);
+    if (el && el.checked) series.push({ name, data, color });
+  };
+  add('t_goals',   'Goals',   goals,   '#2e7d32');
+  add('t_shots',   'Shots',   shots,   '#1565c0');
+  add('t_points',  'Points',  points,  '#8e24aa');
+  add('t_minutes', 'Minutes', minutes, '#6d4c41');
 
-  const xFor=(i,n)=> pad.l+(i*(pw/Math.max(1,n-1))), yFor=(v,m)=> pad.t+ph-(v/m)*ph;
+  const pad = { l: 36, r: 10, t: 14, b: 26 };
+  const pw = w - pad.l - pad.r;
+  const ph = h - pad.t - pad.b;
+  const N  = (series[0]?.data.length || 1);
 
-  series.forEach(s=>{
-    ctx.strokeStyle=s.color; ctx.lineWidth=2; ctx.beginPath();
-    s.data.forEach((v,i)=>{const x=xFor(i,s.data.length), y=yFor(v,maxY); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);});
+  const maxY = Math.max(5, ...series.flatMap(s => s.data));
+  const xFor = (i) => (N === 1) ? pad.l + pw/2 : pad.l + (i * (pw / (N - 1)));
+  const yFor = (v) => pad.t + ph - (v / maxY) * ph;
+
+  // axes
+  ctx.strokeStyle = '#d8d8de';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + ph); ctx.stroke();       // y-axis
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + ph); ctx.lineTo(pad.l + pw, pad.t + ph); ctx.stroke(); // x-axis
+
+  // y ticks
+  ctx.fillStyle = '#666';
+  ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const val = Math.round((maxY * i) / ticks);
+    const y = yFor(val);
+    ctx.strokeStyle = '#f0f0f4';
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + pw, y); ctx.stroke();
+    ctx.fillStyle = '#666';
+    ctx.fillText(String(val), 4, y + 4);
+  }
+
+  // x labels (game #)
+  ctx.fillStyle = '#666';
+  games.forEach((_, i) => {
+    const x = xFor(i);
+    const label = String(i + 1);
+    ctx.fillText(label, x - ctx.measureText(label).width / 2, pad.t + ph + 16);
+  });
+
+  // lines + markers
+  series.forEach(s => {
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    s.data.forEach((v, i) => {
+      const x = xFor(i), y = yFor(v);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
     ctx.stroke();
-    s.data.forEach((v,i)=>{const x=xFor(i,s.data.length), y=yFor(v,maxY); ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle=s.color; ctx.fill();});
+    ctx.fillStyle = s.color;
+    s.data.forEach((v, i) => {
+      const x = xFor(i), y = yFor(v);
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    });
   });
 }
 ['t_goals','t_shots','t_points','t_minutes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change',drawTrends); });
 addEventListener('resize',drawTrends);
+  document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) drawTrends();
+});
 
 /* ---------------- Settings ---------------- */
 document.getElementById('pctMode').addEventListener('change',e=>{ state.settings.pctMode=!!e.target.checked; save(state); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
