@@ -13,6 +13,7 @@
     header{position:sticky;top:0;z-index:5;background:var(--green);color:#fff;border-bottom:3px solid var(--gold)}
     .header-inner{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
     h1{margin:0;font-size:18px}
+    .header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .status-pill{padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.15);font-size:12px}
     .menu-btn{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);padding:8px 10px;border-radius:10px}
     .menu-panel{position:absolute;right:8px;top:54px;background:#fff;color:#111;border:1px solid #ddd;border-radius:12px;padding:8px;display:none;min-width:260px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
@@ -32,6 +33,8 @@
     .row{padding:6px 0;border-bottom:1px solid #f1f1f4}.row:last-child{border-bottom:none}
     .grid2{display:grid;grid-template-columns:1fr;gap:10px}
     .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .actions button{flex:1;max-width:150px}
+    @media (max-width:480px){ .actions button{flex:none;font-size:14px;padding:6px 8px} }
     button{border:1px solid #ddd;background:#fff;padding:12px;border-radius:12px;font-size:16px}
     .btn-sm{padding:8px 10px;font-size:14px;border-radius:10px}
     .primary{background:#155e2e;color:#fff;border:none}
@@ -68,75 +71,14 @@
       table { width: 100% !important; }
       th, td { padding: 4px 0 !important; }
     }
-
-  /* Keep buttons (including Print) inline and wrapping neatly */
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.actions button {
-  flex: 1;
-  max-width: 150px; /* adjust if needed */
-}
-@media (max-width: 480px) {
-  .actions button {
-    flex: none;
-    font-size: 14px;
-    padding: 6px 8px;
-  }
-}
-
-/* Ensure sign-out button is visible on mobile */
-#signOutBtn {
-  display: inline-block !important;
-  visibility: visible !important;
-  background: #e33;
-  color: #fff;
-  border: none;
-}
-.header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-  /* Keep action buttons (incl. Print) on one line and wrap neatly on phones */
-.actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:10px;
-}
-.actions button{
-  flex:1;
-  max-width:150px; /* adjust if you want wider */
-}
-@media (max-width:480px){
-  .actions button{
-    flex:none;
-    font-size:14px;
-    padding:6px 8px;
-  }
-}
-
-/* Show the signed-in controls only when authenticated */
-#signedInControls{ display:none; }
-body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
-
-/* Make the Sign out button clearly visible */
-#signOutBtn{
-  background:#e33;
-  color:#fff;
-  border:none;
-}
   </style>
 </head>
 <body>
 <header>
   <div class="header-inner">
     <h1 id="appTitle">Costa Polo Stats</h1>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span id="appVersion" class="status-pill">v21-rebuild</span>
+    <div class="header-actions">
+      <span id="appVersion" class="status-pill">v21-rebuild-4</span>
       <span id="cloudStatus" class="status-pill">Not signed in</span>
       <button id="menuBtn" class="menu-btn">☰</button>
 
@@ -155,7 +97,7 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
             </div>
           </div>
 
-          <!-- Player info card -->
+          <!-- Player info (shown when signed in) -->
           <div id="playerInfoCard" class="fine" style="display:none; margin-top:6px; padding-top:8px; border-top:1px solid #eee">
             <div style="font-weight:600; margin-bottom:6px;">Player info</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
@@ -164,10 +106,8 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
             </div>
             <select id="schoolYear" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px">
               <option value="">School year…</option>
-              <option>Freshman</option>
-              <option>Sophomore</option>
-              <option>Junior</option>
-              <option>Senior</option>
+              <option>Freshman</option><option>Sophomore</option>
+              <option>Junior</option><option>Senior</option>
             </select>
             <button id="saveProfile" class="btn-sm primary" type="button">Save player</button>
             <div id="profileMsg" class="fine" style="min-height:16px; margin-top:6px"></div>
@@ -246,12 +186,11 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
   <section id="games" class="panel"><div id="gamesList"></div></section>
 
   <section id="season" class="panel">
-  <div id="seasonTotals" class="card"></div>
-
-  <div class="card" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-    <button id="dlSeasonTotals" class="btn-sm" type="button">Download Season Totals CSV</button>
-  </div>
-</section>
+    <div id="seasonTotals" class="card"></div>
+    <div class="card" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button id="dlSeasonTotals" class="btn-sm" type="button">Download Season Totals CSV</button>
+    </div>
+  </section>
 
   <section id="trends" class="panel">
     <div class="card">
@@ -278,6 +217,10 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
     </div>
   </section>
 </main>
+
+<footer id="appFooter" class="fine" style="text-align:center; padding:10px 0 16px 0; color:#666">
+  v21-rebuild-4
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -372,10 +315,35 @@ function renderCurrent(){
 }
 renderCurrent();
 
-/* Undo / +/- */
+/* Undo / +/- with goals<=shots rule */
 function pushUndo(s){undoStack.push(s); if(undoStack.length>100)undoStack.shift();}
-function inc(k){pushUndo(JSON.parse(JSON.stringify(current))); current.stats[k]++; if(k==='five_m_attempt') current.stats.shot++; if(k==='five_m_goal'){ current.stats.goal++; current.stats.shot++; } renderCurrent(); saveDraft();}
-function dec(k){pushUndo(JSON.parse(JSON.stringify(current))); if(current.stats[k]>0) current.stats[k]--; if(k==='five_m_attempt'&&current.stats.shot>0) current.stats.shot--; if(k==='five_m_goal'){ if(current.stats.goal>0) current.stats.goal--; if(current.stats.shot>0) current.stats.shot--; } renderCurrent(); saveDraft();}
+function inc(k){
+  pushUndo(JSON.parse(JSON.stringify(current)));
+  if (k === 'goal') {
+    if (current.stats.goal + 1 > current.stats.shot) current.stats.shot++;
+    current.stats.goal++;
+  } else if (k === 'five_m_attempt') {
+    current.stats.shot++;
+  } else if (k === 'five_m_goal') {
+    current.stats.goal++; current.stats.shot++;
+  } else {
+    current.stats[k]++;
+  }
+  renderCurrent(); saveDraft();
+}
+function dec(k){
+  pushUndo(JSON.parse(JSON.stringify(current)));
+  if (k === 'shot') {
+    if (current.stats.shot > 0) current.stats.shot--;
+    if (current.stats.goal > current.stats.shot) current.stats.goal = current.stats.shot;
+  } else if (k === 'five_m_goal') {
+    if (current.stats.goal > 0) current.stats.goal--;
+    if (current.stats.shot > 0) current.stats.shot--;
+  } else {
+    if (current.stats[k] > 0) current.stats[k]--;
+  }
+  renderCurrent(); saveDraft();
+}
 document.getElementById('undo').addEventListener('click',()=>{ if(!undoStack.length)return; current=undoStack.pop(); dateEl.value=current.date; oppEl.value=current.opponent; notesEl.value=current.notes||''; ptTimeEl.textContent=fmtTime(current.pt_seconds||0); renderCurrent(); saveDraft(); });
 
 /* CSV helpers */
@@ -495,7 +463,7 @@ function renderSeason(){
   };
 }
 
-/* Trends */
+/* Trends (with point markers) */
 function drawTrends() {
   const cvs = document.getElementById('trendCanvas');
   const ctx = cvs.getContext('2d');
@@ -567,13 +535,13 @@ document.getElementById('exportCSV').addEventListener('click',()=>{ const a=docu
 document.getElementById('exportJSON').addEventListener('click',()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})); a.download='ryan_wp_backup.json'; a.click(); });
 document.getElementById('importJSON').addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const obj=JSON.parse(r.result); if(!obj||typeof obj!=='object'||!Array.isArray(obj.games)) throw new Error('Invalid backup'); state=obj; save(state); alert('Imported.'); renderGames(); renderSeason(); drawTrends(); renderCurrent(); }catch(err){ alert('Import failed: '+err.message);} }; r.readAsText(f); });
 document.getElementById('resetAll').addEventListener('click',()=>{ if(!confirm('Erase ALL local data on this device?')) return; state={games:[],settings:{pctMode:false,autoSaveCSV:true},user:null}; save(state); localStorage.removeItem(DRAFT_KEY); current=blankGame(); undoStack=[]; dateEl.value=current.date; oppEl.value=''; notesEl.value=''; ptTimeEl.textContent=fmtTime(0); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
-/* ---------------- Profile helpers (Step D) ---------------- */
+
+/* ---------------- Profile helpers ---------------- */
 function setAppTitle(first) {
   const el = document.getElementById('appTitle') || document.querySelector('header h1');
   if (!el) return;
   el.textContent = first ? `Costa Polo Stats: ${first}` : 'Costa Polo Stats';
 }
-
 async function loadProfile() {
   if (!state.user) return null;
   const { data, error } = await supabase
@@ -581,10 +549,8 @@ async function loadProfile() {
     .select('first_name,last_name,school_year')
     .eq('id', state.user.id)
     .single();
-
   if (!error && data) {
     state.profile = data;
-    // Prefill fields if present
     const fn = document.getElementById('firstName');
     const ln = document.getElementById('lastName');
     const sy = document.getElementById('schoolYear');
@@ -595,7 +561,6 @@ async function loadProfile() {
   }
   return data || null;
 }
-
 async function upsertProfile(first, last, schoolYear) {
   if (!state.user) { alert('Sign in first.'); return; }
   const { error } = await supabase.from('profiles').upsert({
@@ -608,11 +573,10 @@ async function upsertProfile(first, last, schoolYear) {
   state.profile = { first_name:first||null, last_name:last||null, school_year:schoolYear||null };
   setAppTitle(first || null);
 }
-  /* ---------------- Player info: wire Save (Step E) ---------------- */
-const playerInfoCard = document.getElementById('playerInfoCard');   // the whole card (optional)
-const profileMsg = document.getElementById('profileMsg');           // tiny status line (optional)
-const saveProfileBtn = document.getElementById('saveProfile');      // <-- button id from HTML snippet
-
+/* Wire Save player */
+const playerInfoCard = document.getElementById('playerInfoCard');
+const profileMsg = document.getElementById('profileMsg');
+const saveProfileBtn = document.getElementById('saveProfile');
 if (saveProfileBtn) {
   saveProfileBtn.addEventListener('click', async ()=>{
     if (!state.user) { alert('Sign in first.'); return; }
@@ -620,57 +584,19 @@ if (saveProfileBtn) {
     const last  = (document.getElementById('lastName')?.value  || '').trim();
     const year  = (document.getElementById('schoolYear')?.value|| '').trim();
     await upsertProfile(first, last, year);
-    if (profileMsg) {
-      profileMsg.textContent = 'Saved.';
-      setTimeout(()=>{ profileMsg.textContent = ''; }, 1500);
-    }
+    if (profileMsg) { profileMsg.textContent = 'Saved.'; setTimeout(()=>{ profileMsg.textContent=''; }, 1500); }
   });
 }
 
-/* ---------------- Auth & realtime (merged, single source of truth) ---------------- */
-
-/* DOM refs (null-safe) */
+/* ---------------- Auth & realtime (merged) ---------------- */
 const cloudStatus = document.getElementById('cloudStatus');
 const setCloud = (t)=> { if (cloudStatus) cloudStatus.textContent = t; };
-
 const authMsg = document.getElementById('authMsg');
 const emailInput = document.getElementById('loginEmail');
 const passInput  = document.getElementById('loginPassword');
-
-const signedInControls   = document.getElementById('signedInControls') || document.getElementById('signedInBar');
+const signedInControls   = document.getElementById('signedInControls');
 const loginWhenSignedOut = document.getElementById('loginWhenSignedOut');
-const playerInfoCard     = document.getElementById('playerInfoCard');
 
-/* Button listeners */
-const signInBtn  = document.getElementById('signInBtn');
-const signUpBtn  = document.getElementById('signUpBtn');
-const signOutBtn = document.getElementById('signOutBtn');
-
-if (signInBtn) signInBtn.addEventListener('click', async (e)=>{
-  e.preventDefault();
-  const email = (emailInput?.value || '').trim();
-  const password = (passInput?.value || '').trim();
-  if (!email || !password) { if (authMsg) authMsg.textContent = 'Enter email and password'; return; }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (authMsg) authMsg.textContent = error ? ('Login failed: ' + error.message) : '';
-});
-
-if (signUpBtn) signUpBtn.addEventListener('click', async (e)=>{
-  e.preventDefault();
-  const email = (emailInput?.value || '').trim();
-  const password = (passInput?.value || '').trim();
-  if (!email || !password) { if (authMsg) authMsg.textContent = 'Enter email and password'; return; }
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (authMsg) authMsg.textContent = error
-    ? ('Sign up failed: ' + error.message)
-    : 'Account created. If email confirmation is required, confirm then sign in.';
-});
-
-if (signOutBtn) signOutBtn.addEventListener('click', async ()=>{
-  await supabase.auth.signOut();
-});
-
-/* Realtime channel helpers */
 let rtSub = null;
 function subscribeRealtime(){
   if (rtSub) return;
@@ -682,50 +608,62 @@ function subscribeRealtime(){
 function unsubscribeRealtime(){
   if (rtSub){ supabase.removeChannel(rtSub); rtSub = null; }
 }
+/* Auth buttons */
+const signInBtn  = document.getElementById('signInBtn');
+const signUpBtn  = document.getElementById('signUpBtn');
+const signOutBtn = document.getElementById('signOutBtn');
+if (signInBtn) signInBtn.addEventListener('click', async (e)=>{
+  e.preventDefault();
+  const email = (emailInput?.value || '').trim();
+  const password = (passInput?.value || '').trim();
+  if (!email || !password) { if (authMsg) authMsg.textContent = 'Enter email and password'; return; }
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (authMsg) authMsg.textContent = error ? ('Login failed: ' + error.message) : '';
+});
+if (signUpBtn) signUpBtn.addEventListener('click', async (e)=>{
+  e.preventDefault();
+  const email = (emailInput?.value || '').trim();
+  const password = (passInput?.value || '').trim();
+  if (!email || !password) { if (authMsg) authMsg.textContent = 'Enter email and password'; return; }
+  const { error } = await supabase.auth.signUp({ email, password });
+  if (authMsg) authMsg.textContent = error
+    ? ('Sign up failed: ' + error.message)
+    : 'Account created. If email confirmation is required, confirm then sign in.';
+});
+if (signOutBtn) signOutBtn.addEventListener('click', async ()=>{ await supabase.auth.signOut(); });
 
-/* Auth state changes */
 supabase.auth.onAuthStateChange(async (_evt, session)=>{
   const signed = !!(session && session.user);
   if (signed){
     state.user = session.user; save(state);
-
     setCloud('Signed in');
     if (authMsg) authMsg.textContent = '';
     if (loginWhenSignedOut) loginWhenSignedOut.style.display = 'none';
     if (signedInControls)   signedInControls.style.display   = 'flex';
     if (playerInfoCard)     playerInfoCard.style.display     = 'block';
-
-    // Pull profile (sets header title to "Costa Polo Stats: <First>")
-    if (typeof loadProfile === 'function') await loadProfile();
-
+    await loadProfile();
     await pullCloudToLocal();
     subscribeRealtime();
   } else {
     state.user = null; save(state);
-
     setCloud('Not signed in');
     if (signedInControls)   signedInControls.style.display   = 'none';
     if (loginWhenSignedOut) loginWhenSignedOut.style.display = 'block';
     if (playerInfoCard)     playerInfoCard.style.display     = 'none';
-    if (typeof setAppTitle === 'function') setAppTitle(null);
-
+    setAppTitle(null);
     unsubscribeRealtime();
   }
 });
-
-/* If already signed in at load, initialize UI + data */
+/* Initial session restore */
 (async ()=>{
   const { data } = await supabase.auth.getSession();
   if (data && data.session && data.session.user){
     state.user = data.session.user; save(state);
-
     setCloud('Signed in');
     if (loginWhenSignedOut) loginWhenSignedOut.style.display = 'none';
     if (signedInControls)   signedInControls.style.display   = 'flex';
     if (playerInfoCard)     playerInfoCard.style.display     = 'block';
-
-    if (typeof loadProfile === 'function') await loadProfile();
-
+    await loadProfile();
     await pullCloudToLocal();
     subscribeRealtime();
   } else {
@@ -782,8 +720,10 @@ function init(){
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations()
       .then(regs => Promise.all(regs.map(r => r.unregister())))
-      .finally(() => navigator.serviceWorker.register('sw.js?v=21rebuild-3'));
-      // ^ bumped version so browser grabs fresh file
+      .finally(() => navigator.serviceWorker.register('sw.js?v=21rebuild-4'));
   }
 }
 init();
+</script>
+</body>
+</html>
