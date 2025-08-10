@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-  <title>Polo Stats</title>
+  <title>Ryan WP Stats</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#155e2e" />
   <style>
@@ -134,12 +134,89 @@
 @media screen {
   #print-header { display: none; }
 }}
+    /* Keep buttons (including Print) inline and wrapping neatly */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.actions button {
+  flex: 1;
+  max-width: 150px; /* adjust if needed */
+}
+@media (max-width: 480px) {
+  .actions button {
+    flex: none;
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+}
+    /* Keep buttons (including Print) inline and wrapping neatly */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.actions button {
+  flex: 1;
+  max-width: 150px; /* adjust if needed */
+}
+@media (max-width: 480px) {
+  .actions button {
+    flex: none;
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+}
+
+/* Ensure sign-out button is visible on mobile */
+#signOutBtn {
+  display: inline-block !important;
+  visibility: visible !important;
+  background: #e33;
+  color: #fff;
+  border: none;
+}
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+    /* Keep action buttons (incl. Print) on one line and wrap neatly on phones */
+.actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.actions button{
+  flex:1;
+  max-width:150px; /* adjust if you want wider */
+}
+@media (max-width:480px){
+  .actions button{
+    flex:none;
+    font-size:14px;
+    padding:6px 8px;
+  }
+}
+
+/* Show the signed-in controls only when authenticated */
+#signedInControls{ display:none; }
+body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Make the Sign out button clearly visible */
+#signOutBtn{
+  background:#e33;
+  color:#fff;
+  border:none;
+}
   </style>
 </head>
 <body>
 <header>
   <div class="header-inner">
-    <h1>Polo Stats</h1>
+    <h1 id="appTitle">Ryan WP Stats</h1>
     <div class="header-actions">
       <span id="cloudStatus" class="status-pill">Not signed in</span>
       <button id="menuBtn" class="menu-btn">☰</button>
@@ -627,12 +704,17 @@ supabase.auth.onAuthStateChange(async (_evt, session)=>{
   const signed = !!(session && session.user);
   if(signed){
     state.user = session.user; save(state);
+    document.body.classList.add('authed');              // <- add this
     setCloud('Signed in'); authMsg.textContent='';
-    loginWhenSignedOut.style.display='none'; signedInControls.style.display='flex';
+    loginWhenSignedOut.style.display='none';
+    signedInControls.style.display='flex';
     await pullCloudToLocal(); subscribeRealtime();
   }else{
     state.user = null; save(state);
-    setCloud('Not signed in'); signedInControls.style.display='none'; loginWhenSignedOut.style.display='block';
+    document.body.classList.remove('authed');           // <- and this
+    setCloud('Not signed in');
+    signedInControls.style.display='none';
+    loginWhenSignedOut.style.display='block';
     unsubscribeRealtime();
   }
 });
@@ -681,6 +763,15 @@ function init(){
   }
 }
 init();
+/* ---------------- Player Name Capture ---------------- */
+let playerName = localStorage.getItem('playerName');
+if (!playerName) {
+  const first = prompt('Enter player first name:').trim();
+  const last = prompt('Enter player last name:').trim();
+  playerName = `${first} ${last}`;
+  localStorage.setItem('playerName', playerName);
+}
+document.querySelector('header h1').textContent = `${playerName.split(' ')[0]} Polo Stats`;
 </script>
 </body>
 </html>
