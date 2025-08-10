@@ -262,7 +262,7 @@ const LS_KEY='wp_v21_rebuild', DRAFT_KEY='wp_v21_rebuild_draft';
 const statDefs=[
   {key:'shot',label:'Shot'},{key:'goal',label:'Goal'},{key:'assist',label:'Assist'},
   {key:'steal',label:'Steal'},{key:'block',label:'Block'},
-  {key:'five_m_attempt',label:'5M Attempt'},{key:'five_m_goal',label:'5M Goal'},{key:'five_m_drawn',label:'5M Drawn'},
+  {key:'five_m_attempt',label:'5M Shot'},{key:'five_m_goal',label:'5M Goal'},{key:'five_m_drawn',label:'5M Drawn'},
   {key:'exclusion',label:'Exclusion'},{key:'exclusion_drawn',label:'Exclusion Drawn'}
 ];
 
@@ -358,13 +358,36 @@ function enforceGoalShotRule(){
   }
 }
 
+/* Undo / +/- with coupling + goal ≤ shot */
+function pushUndo(s){
+  undoStack.push(s);
+  if (undoStack.length > 100) undoStack.shift();
+}
+
+function enforceGoalShotRule(){
+  if ((current.stats.goal || 0) > (current.stats.shot || 0)) {
+    current.stats.goal = current.stats.shot;
+  }
+}
+
 function inc(k){
   pushUndo(JSON.parse(JSON.stringify(current)));
+
+  // Always bump the target stat
   current.stats[k] = (current.stats[k] || 0) + 1;
 
-  if (k === 'five_m_attempt') {
+  // Coupled updates
+  if (k === 'shot') {
+    // pure shot: no goal change
+  } else if (k === 'goal') {
+    // goal implies a shot
+    current.stats.shot = (current.stats.shot || 0) + 1;
+  } else if (k === 'five_m_attempt') {
+    // 5M shot implies a shot
     current.stats.shot = (current.stats.shot || 0) + 1;
   } else if (k === 'five_m_goal') {
+    // 5M goal implies: 5M shot + goal + shot
+    current.stats.five_m_attempt = (current.stats.five_m_attempt || 0) + 1;
     current.stats.goal = (current.stats.goal || 0) + 1;
     current.stats.shot = (current.stats.shot || 0) + 1;
   }
@@ -376,11 +399,19 @@ function inc(k){
 
 function dec(k){
   pushUndo(JSON.parse(JSON.stringify(current)));
+
+  // Decrement the pressed stat
   if ((current.stats[k] || 0) > 0) current.stats[k]--;
 
-  if (k === 'five_m_attempt') {
+  // Reverse the couplings
+  if (k === 'shot') {
+    // pure shot: nothing else
+  } else if (k === 'goal') {
+    if ((current.stats.shot || 0) > 0) current.stats.shot--;
+  } else if (k === 'five_m_attempt') {
     if ((current.stats.shot || 0) > 0) current.stats.shot--;
   } else if (k === 'five_m_goal') {
+    if ((current.stats.five_m_attempt || 0) > 0) current.stats.five_m_attempt--;
     if ((current.stats.goal || 0) > 0) current.stats.goal--;
     if ((current.stats.shot || 0) > 0) current.stats.shot--;
   }
@@ -403,7 +434,7 @@ document.getElementById('undo').addEventListener('click', () => {
   
 /* CSV helpers */
 function gameToCSV(g){
-  const H=['date','opponent','notes','minutes','Shot','Goal','Assist','Steal','Block','5M Attempt','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct'];
+  const H=['date','opponent','notes','minutes','Shot','Goal','Assist','Steal','Block','5M Shot','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct'];
   const goals=g.stats.goal, shots=g.stats.shot, ass=g.stats.assist; const points=goals+ass;
   const shotpct=(shots?(goals/shots).toFixed(2):'-'); const mins=Math.round((g.pt_seconds||0)/60);
   const C=[g.date,(g.opponent||''),(g.notes||'').replace(/\n/g,' ').replace(/,/g,';'),mins,g.stats.shot,g.stats.goal,g.stats.assist,g.stats.steal,g.stats.block,g.stats.five_m_attempt,g.stats.five_m_goal,g.stats.five_m_drawn,g.stats.exclusion,g.stats.exclusion_drawn,points,shotpct];
@@ -499,7 +530,7 @@ function renderSeason(){
 <tr><th>Assist</th><td class='right'>${agg.assist}</td></tr>
 <tr><th>Steal</th><td class='right'>${agg.steal}</td></tr>
 <tr><th>Block</th><td class='right'>${agg.block}</td></tr>
-<tr><th>5M Attempt</th><td class='right'>${agg.five_m_attempt}</td></tr>
+<tr><th>5M Shot</th><td class='right'>${agg.five_m_attempt}</td></tr>
 <tr><th>5M Goal</th><td class='right'>${agg.five_m_goal}</td></tr>
 <tr><th>5M Drawn</th><td class='right'>${agg.five_m_drawn}</td></tr>
 <tr><th>Exclusion</th><td class='right'>${agg.exclusion}</td></tr>
@@ -511,7 +542,7 @@ function renderSeason(){
 </tbody></table>`;
 
   document.getElementById('dlSeasonTotals').onclick=()=>{
-    const order=['Shot','Goal','Assist','Steal','Block','5M Attempt','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct','TotalMinutes','AvgMinutesPerGame'];
+    const order=['Shot','Goal','Assist','Steal','Block','5M Shot','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct','TotalMinutes','AvgMinutesPerGame'];
     const row=[agg.shot,agg.goal,agg.assist,agg.steal,agg.block,agg.five_m_attempt,agg.five_m_goal,agg.five_m_drawn,agg.exclusion,agg.exclusion_drawn,gsum+asum, ssum?(gsum/ssum).toFixed(2):'-', fmtTime(tsum), fmtTime(avgSec)];
     const csv='Metric,'+order.join(',')+'\nTotals,'+row.join(',')+'\n';
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='ryan_wp_season_totals.csv'; a.click();
@@ -579,7 +610,7 @@ document.getElementById('autoSaveCSV').addEventListener('change',e=>{ state.sett
 
 /* Export/Import/Reset */
 function toCSV(){
-  const H=['date','opponent','notes','minutes','Shot','Goal','Assist','Steal','Block','5M Attempt','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct']; const rows=[H.join(',')];
+  const H=['date','opponent','notes','minutes','Shot','Goal','Assist','Steal','Block','5M Shot','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct']; const rows=[H.join(',')];
   state.games.forEach(g=>{ const goals=g.stats.goal,shots=g.stats.shot,ass=g.stats.assist; const points=goals+ass; const shotpct=(shots?(goals/shots).toFixed(2):'-'); const mins=Math.round((g.pt_seconds||0)/60);
     const C=[g.date,(g.opponent||''),(g.notes||'').replace(/\n/g,' ').replace(/,/g,';'),mins,g.stats.shot,g.stats.goal,g.stats.assist,g.stats.steal,g.stats.block,g.stats.five_m_attempt,g.stats.five_m_goal,g.stats.five_m_drawn,g.stats.exclusion,g.stats.exclusion_drawn,points,shotpct]; 
     rows.push(C.join(','));
