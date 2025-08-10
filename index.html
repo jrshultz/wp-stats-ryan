@@ -46,6 +46,70 @@
     table{width:100%;border-collapse:collapse}
     th,td{padding:6px 4px;text-align:left}
     td.right{text-align:right}
+    /* ---------- Print layout ---------- */
+@media print {
+  @page { size: letter portrait; margin: 0.5in; }
+  body { background: #fff !important; }
+  header, .tabs, .menu-panel, .menu-btn, .status-pill { display: none !important; }
+
+  /* Remove sticky behavior & extra padding so content starts at top */
+  header, .tabs { position: static !important; }
+  main { padding: 0 !important; }
+
+  /* Make cards simple and full-width on paper */
+  .card { border: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
+
+  /* Hide all interactive controls in print */
+  button, .actions, .row button, .timer button { display: none !important; }
+
+  /* Keep the numbers readable in a neat two-column row */
+  .controls { 
+    grid-template-columns: 1fr 120px !important; 
+    gap: 8px !important;
+    padding: 6px 0 !important;
+  }
+  .controls .label { font-weight: 600; }
+  .counter { 
+    border: none !important; 
+    background: transparent !important; 
+    text-align: right !important; 
+    padding: 0 !important;
+  }
+  .row { border-bottom: 1px solid #ddd !important; }
+
+  /* Meta row (date/opponent) looks like a header line */
+  .meta { 
+    grid-template-columns: 1fr 1fr !important; 
+    gap: 12px !important; 
+    margin: 0 0 12px 0 !important;
+  }
+  .meta input { 
+    border: none !important; 
+    padding: 0 !important; 
+    font-size: 14px !important;
+  }
+
+  /* Timer value printed plainly */
+  .timer { margin: 0 0 8px 0 !important; }
+  .timer .time { 
+    border: none !important; 
+    padding: 0 !important; 
+    font-weight: 600 !important;
+  }
+
+  /* Notes prints as plain paragraph */
+  textarea#notes { 
+    border: none !important; 
+    padding: 0 !important; 
+    min-height: unset !important; 
+    height: auto !important; 
+    resize: none !important; 
+  }
+
+  /* Season cards if you print those pages */
+  table { width: 100% !important; }
+  th, td { padding: 4px 0 !important; }
+}
   </style>
 </head>
 <body>
