@@ -109,7 +109,19 @@
   /* Season cards if you print those pages */
   table { width: 100% !important; }
   th, td { padding: 4px 0 !important; }
+@media print {
+  #print-header {
+    display: block !important;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 4px;
+  }
 }
+@media screen {
+  #print-header { display: none; }
+}}
   </style>
 </head>
 <body>
@@ -228,6 +240,8 @@
       </label>
     </div>
   </section>
+  <!-- Print-only header -->
+<div id="print-header"></div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
