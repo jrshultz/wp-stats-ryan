@@ -167,7 +167,7 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
 <body>
 <header>
   <div class="header-inner">
-    <h1 id="appTitle">Ryan WP Stats</h1>
+    <h1 id="appTitle">Costa Polo Stats</h1>
     <div style="display:flex;gap:8px;align-items:center">
       <span id="appVersion" class="status-pill">v21-rebuild</span>
       <span id="cloudStatus" class="status-pill">Not signed in</span>
@@ -252,11 +252,12 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
   <section id="games" class="panel"><div id="gamesList"></div></section>
 
   <section id="season" class="panel">
-    <div class="card" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
-      <button id="dlSeasonTotals" class="btn-sm" type="button">Download Season Totals CSV</button>
-    </div>
-    <div id="seasonTotals" class="card"></div>
-  </section>
+  <div id="seasonTotals" class="card"></div>
+
+  <div class="card" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="dlSeasonTotals" class="btn-sm" type="button">Download Season Totals CSV</button>
+  </div>
+</section>
 
   <section id="trends" class="panel">
     <div class="card">
@@ -572,7 +573,66 @@ document.getElementById('exportCSV').addEventListener('click',()=>{ const a=docu
 document.getElementById('exportJSON').addEventListener('click',()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})); a.download='ryan_wp_backup.json'; a.click(); });
 document.getElementById('importJSON').addEventListener('change',(e)=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const obj=JSON.parse(r.result); if(!obj||typeof obj!=='object'||!Array.isArray(obj.games)) throw new Error('Invalid backup'); state=obj; save(state); alert('Imported.'); renderGames(); renderSeason(); drawTrends(); renderCurrent(); }catch(err){ alert('Import failed: '+err.message);} }; r.readAsText(f); });
 document.getElementById('resetAll').addEventListener('click',()=>{ if(!confirm('Erase ALL local data on this device?')) return; state={games:[],settings:{pctMode:false,autoSaveCSV:true},user:null}; save(state); localStorage.removeItem(DRAFT_KEY); current=blankGame(); undoStack=[]; dateEl.value=current.date; oppEl.value=''; notesEl.value=''; ptTimeEl.textContent=fmtTime(0); renderCurrent(); renderGames(); renderSeason(); drawTrends(); });
+/* ---------------- Profile helpers (Step D) ---------------- */
+function setAppTitle(first) {
+  const el = document.getElementById('appTitle') || document.querySelector('header h1');
+  if (!el) return;
+  el.textContent = first ? `Costa Polo Stats: ${first}` : 'Costa Polo Stats';
+}
 
+async function loadProfile() {
+  if (!state.user) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('first_name,last_name,school_year')
+    .eq('id', state.user.id)
+    .single();
+
+  if (!error && data) {
+    state.profile = data;
+    // Prefill fields if present
+    const fn = document.getElementById('firstName');
+    const ln = document.getElementById('lastName');
+    const sy = document.getElementById('schoolYear');
+    if (fn) fn.value = data.first_name || '';
+    if (ln) ln.value = data.last_name  || '';
+    if (sy) sy.value = data.school_year || '';
+    setAppTitle(data.first_name || null);
+  }
+  return data || null;
+}
+
+async function upsertProfile(first, last, schoolYear) {
+  if (!state.user) { alert('Sign in first.'); return; }
+  const { error } = await supabase.from('profiles').upsert({
+    id: state.user.id,
+    first_name: first || null,
+    last_name:  last  || null,
+    school_year: schoolYear || null
+  });
+  if (error) { alert('Save failed: ' + error.message); return; }
+  state.profile = { first_name:first||null, last_name:last||null, school_year:schoolYear||null };
+  setAppTitle(first || null);
+}
+  /* ---------------- Player info: wire Save (Step E) ---------------- */
+const playerInfoCard = document.getElementById('playerInfoCard');   // the whole card (optional)
+const profileMsg = document.getElementById('profileMsg');           // tiny status line (optional)
+const saveProfileBtn = document.getElementById('saveProfile');      // <-- button id from HTML snippet
+
+if (saveProfileBtn) {
+  saveProfileBtn.addEventListener('click', async ()=>{
+    if (!state.user) { alert('Sign in first.'); return; }
+    const first = (document.getElementById('firstName')?.value || '').trim();
+    const last  = (document.getElementById('lastName')?.value  || '').trim();
+    const year  = (document.getElementById('schoolYear')?.value|| '').trim();
+    await upsertProfile(first, last, year);
+    if (profileMsg) {
+      profileMsg.textContent = 'Saved.';
+      setTimeout(()=>{ profileMsg.textContent = ''; }, 1500);
+    }
+  });
+}
+  
 /* Auth & realtime */
 const cloudStatus=document.getElementById('cloudStatus'); const setCloud=(t)=>cloudStatus.textContent=t;
 const authMsg=document.getElementById('authMsg'); const emailInput=document.getElementById('loginEmail'); const passInput=document.getElementById('loginPassword');
@@ -603,36 +663,92 @@ function subscribeRealtime(){
     .subscribe();
 }
 function unsubscribeRealtime(){ if(rtSub){ supabase.removeChannel(rtSub); rtSub=null; } }
+<script>
+/* ---------------- Profile helpers ---------------- */
+async function loadProfile() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('first_name, last_name, school_year')
+    .eq('id', state.user.id)
+    .single();
+  if (!error && data) {
+    document.getElementById('firstName').value = data.first_name || '';
+    document.getElementById('lastName').value = data.last_name || '';
+    document.getElementById('schoolYear').value = data.school_year || '';
+    document.getElementById('headerTitle').textContent =
+      `Costa Polo Stats: ${data.first_name || ''}`;
+  }
+}
 
-supabase.auth.onAuthStateChange(async (_evt, session)=>{
+async function upsertProfile() {
+  const first = document.getElementById('firstName').value.trim();
+  const last = document.getElementById('lastName').value.trim();
+  const year = document.getElementById('schoolYear').value.trim();
+  const updates = {
+    id: state.user.id,
+    first_name: first,
+    last_name: last,
+    school_year: year,
+    updated_at: new Date()
+  };
+  const { error } = await supabase.from('profiles').upsert(updates);
+  if (error) alert('Save failed: ' + error.message);
+  else alert('Saved!');
+}
+
+/* ---------------- Auth & realtime ---------------- */
+const cloudStatus = document.getElementById('cloudStatus');
+const setCloud = (t)=> cloudStatus.textContent = t;
+
+supabase.auth.onAuthStateChange(async (_evt, session) => {
   const signed = !!(session && session.user);
-  if(signed){
-    state.user = session.user; save(state);
-    document.body.classList.add('authed');
-    setCloud('Signed in'); authMsg.textContent='';
-    loginWhenSignedOut.style.display='none';
-    signedInControls.style.display='flex';
-    await pullCloudToLocal(); subscribeRealtime();
-  }else{
-    state.user = null; save(state);
-    document.body.classList.remove('authed');
+  if (signed) {
+    state.user = session.user; 
+    save(state);
+
+    setCloud('Signed in');
+    authMsg.textContent = '';
+    loginWhenSignedOut.style.display = 'none';
+    signedInControls.style.display = 'flex';
+
+    if (playerInfoCard) playerInfoCard.style.display = 'block'; // show Player info card
+    await loadProfile();                                         // pull profile + set header
+
+    await pullCloudToLocal();
+    subscribeRealtime();
+  } else {
+    state.user = null; 
+    save(state);
+
     setCloud('Not signed in');
-    signedInControls.style.display='none';
-    loginWhenSignedOut.style.display='block';
+    signedInControls.style.display = 'none';
+    loginWhenSignedOut.style.display = 'block';
+
+    if (playerInfoCard) playerInfoCard.style.display = 'none';   // hide card when logged out
+    setAppTitle(null);                                           // default title
+
     unsubscribeRealtime();
   }
 });
 
-// If already signed in at load, pull immediately
+// If already signed in at load, pull + load profile immediately
 (async () => {
   const { data } = await supabase.auth.getSession();
   if (data && data.session && data.session.user) {
-    state.user = data.session.user; save(state);
+    state.user = data.session.user; 
+    save(state);
+
     setCloud('Signed in');
     loginWhenSignedOut.style.display = 'none';
     signedInControls.style.display = 'flex';
+
+    if (playerInfoCard) playerInfoCard.style.display = 'block';
+    await loadProfile();                                         // <— important here too
+
     await pullCloudToLocal();
     subscribeRealtime();
+  } else {
+    setCloud('Not signed in');
   }
 })();
 
@@ -684,15 +800,6 @@ function init(){
   }
 }
 init();
-/* ---------------- Player Name Capture ---------------- */
-let playerName = localStorage.getItem('playerName');
-if (!playerName) {
-  const first = prompt('Enter player first name:').trim();
-  const last = prompt('Enter player last name:').trim();
-  playerName = `${first} ${last}`;
-  localStorage.setItem('playerName', playerName);
-}
-document.querySelector('header h1').textContent = `${playerName.split(' ')[0]} Polo Stats`;
 </script>
 </body>
 </html>
