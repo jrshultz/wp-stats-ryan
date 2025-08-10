@@ -1,0 +1,6 @@
+git clone https://github.com/jrshultz/wp-stats-ryan.git
+cd wp-stats-ryan
+git apply patch-sync-fix.diff
+git add -A
+git commit -m "Fix: reliable cloud sync, delete; show full stat line; force-pull"
+git push
