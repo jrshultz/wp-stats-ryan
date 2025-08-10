@@ -342,32 +342,40 @@ function renderCurrent(){
 renderCurrent();
 
 /* Undo / +/- with goals<=shots rule */
-function pushUndo(s){undoStack.push(s); if(undoStack.length>100)undoStack.shift();}
+function pushUndo(s){ undoStack.push(s); if(undoStack.length>100) undoStack.shift(); }
+
 function inc(k){
   pushUndo(JSON.parse(JSON.stringify(current)));
-  if (k === 'goal') {
-    if (current.stats.goal + 1 > current.stats.shot) current.stats.shot++;
-    current.stats.goal++;
-  } else if (k === 'five_m_attempt') {
-    current.stats.shot++;
+  // always bump the target stat
+  current.stats[k] = (current.stats[k] || 0) + 1;
+
+  // coupled updates
+  if (k === 'five_m_attempt') {
+    current.stats.shot = (current.stats.shot || 0) + 1;
   } else if (k === 'five_m_goal') {
-    current.stats.goal++; current.stats.shot++;
-  } else {
-    current.stats[k]++;
+    current.stats.five_m_goal = (current.stats.five_m_goal || 0); // just clarity
+    current.stats.goal = (current.stats.goal || 0) + 1;
+    current.stats.shot = (current.stats.shot || 0) + 1;
   }
-  renderCurrent(); saveDraft();
+
+  renderCurrent();
+  saveDraft();
 }
+
 function dec(k){
   pushUndo(JSON.parse(JSON.stringify(current)));
-  if (k === 'shot') {
-    if (current.stats.shot > 0) current.stats.shot--;
-    if (current.stats.goal > current.stats.shot) current.stats.goal = current.stats.shot;
+  if ((current.stats[k] || 0) > 0) current.stats[k]--;
+
+  if (k === 'five_m_attempt') {
+    if ((current.stats.shot || 0) > 0) current.stats.shot--;
   } else if (k === 'five_m_goal') {
-    if (current.stats.goal > 0) current.stats.goal--;
-    if (current.stats.shot > 0) current.stats.shot--;
-  } else {
-    if (current.stats[k] > 0) current.stats[k]--;
+    if ((current.stats.goal || 0) > 0) current.stats.goal--;
+    if ((current.stats.shot || 0) > 0) current.stats.shot--;
   }
+
+  renderCurrent();
+  saveDraft();
+}
   renderCurrent(); saveDraft();
 }
 document.getElementById('undo').addEventListener('click',()=>{ if(!undoStack.length)return; current=undoStack.pop(); dateEl.value=current.date; oppEl.value=current.opponent; notesEl.value=current.notes||''; ptTimeEl.textContent=fmtTime(current.pt_seconds||0); renderCurrent(); saveDraft(); });
