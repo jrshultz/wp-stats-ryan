@@ -1,4 +1,4 @@
-const CACHE='wp-v22';
+const CACHE = 'wp-v23';
 self.addEventListener('install',e=>{
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./index.html','./manifest.json','./sw.js','./icon-192.png','./icon-512.png'])));
