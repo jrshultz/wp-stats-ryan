@@ -68,40 +68,7 @@
       table { width: 100% !important; }
       th, td { padding: 4px 0 !important; }
     }
-  /* Keep Print button inline with other controls on small screens */
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.actions button {
-  flex: 1;
-  max-width: 150px; /* adjust as needed */
-}
-@media (max-width: 480px) {
-  .actions button {
-    flex: none;
-    font-size: 14px;
-    padding: 6px 8px;
-  }
-}
-  /* Keep buttons (including Print) inline and wrapping neatly */
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.actions button {
-  flex: 1;
-  max-width: 150px; /* adjust if needed */
-}
-@media (max-width: 480px) {
-  .actions button {
-    flex: none;
-    font-size: 14px;
-    padding: 6px 8px;
-  }
-}
+
   /* Keep buttons (including Print) inline and wrapping neatly */
 .actions {
   display: flex;
@@ -172,9 +139,13 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
       <span id="appVersion" class="status-pill">v21-rebuild</span>
       <span id="cloudStatus" class="status-pill">Not signed in</span>
       <button id="menuBtn" class="menu-btn">☰</button>
+
+      <!-- Account menu -->
       <div id="menuPanel" class="menu-panel">
         <div style="padding:8px;border-bottom:1px solid #eee;margin-bottom:6px">
           <div style="font-weight:600;margin:4px 0 6px;">Account</div>
+
+          <!-- When signed out -->
           <div id="loginWhenSignedOut">
             <input id="loginEmail" type="email" placeholder="you@example.com" inputmode="email" autocapitalize="none" autocomplete="email" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:6px">
             <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:6px">
@@ -183,11 +154,34 @@ body.authed #signedInControls{ display:flex; gap:8px; flex-wrap:wrap; }
               <button id="signUpBtn" class="btn-sm" type="button">Create account</button>
             </div>
           </div>
+
+          <!-- Player info card -->
+          <div id="playerInfoCard" class="fine" style="display:none; margin-top:6px; padding-top:8px; border-top:1px solid #eee">
+            <div style="font-weight:600; margin-bottom:6px;">Player info</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <input id="firstName" type="text" placeholder="First name">
+              <input id="lastName"  type="text" placeholder="Last name">
+            </div>
+            <select id="schoolYear" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:8px">
+              <option value="">School year…</option>
+              <option>Freshman</option>
+              <option>Sophomore</option>
+              <option>Junior</option>
+              <option>Senior</option>
+            </select>
+            <button id="saveProfile" class="btn-sm primary" type="button">Save player</button>
+            <div id="profileMsg" class="fine" style="min-height:16px; margin-top:6px"></div>
+          </div>
+
+          <!-- When signed in -->
           <div id="signedInControls" style="display:none;gap:8px;flex-wrap:wrap">
             <button id="signOutBtn" class="btn-sm danger" type="button">Sign out</button>
           </div>
+
           <div id="authMsg" class="fine" style="min-height:16px;margin-top:6px"></div>
         </div>
+
+        <!-- Other menu items -->
         <button id="syncNowBtn">Sync now</button>
         <button id="exportCSV">Export CSV</button>
         <button id="exportJSON">Backup JSON</button>
@@ -631,38 +625,6 @@ if (saveProfileBtn) {
       setTimeout(()=>{ profileMsg.textContent = ''; }, 1500);
     }
   });
-}
-  
-/* ---------------- Profile helpers ---------------- */
-async function loadProfile() {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('first_name, last_name, school_year')
-    .eq('id', state.user.id)
-    .single();
-  if (!error && data) {
-    document.getElementById('firstName').value = data.first_name || '';
-    document.getElementById('lastName').value = data.last_name || '';
-    document.getElementById('schoolYear').value = data.school_year || '';
-    document.getElementById('headerTitle').textContent =
-      `Costa Polo Stats: ${data.first_name || ''}`;
-  }
-}
-
-async function upsertProfile() {
-  const first = document.getElementById('firstName').value.trim();
-  const last = document.getElementById('lastName').value.trim();
-  const year = document.getElementById('schoolYear').value.trim();
-  const updates = {
-    id: state.user.id,
-    first_name: first,
-    last_name: last,
-    school_year: year,
-    updated_at: new Date()
-  };
-  const { error } = await supabase.from('profiles').upsert(updates);
-  if (error) alert('Save failed: ' + error.message);
-  else alert('Saved!');
 }
 
 /* ---------------- Auth & realtime (merged, single source of truth) ---------------- */
