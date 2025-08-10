@@ -70,6 +70,7 @@
           <div id="authMsg" class="fine" style="min-height:16px;margin-top:6px"></div>
         </div>
         <button id="syncNowBtn">Sync now</button>
+        <button id="forcePull">Force pull from cloud</button>
         <button id="exportCSV">Export CSV</button>
         <button id="exportJSON">Backup JSON</button>
         <label for="importJSON" style="display:block"><span style="display:block;padding:10px">Import JSON</span></label>
@@ -506,6 +507,8 @@ async function pullCloudToLocal(){
 let syncQueued=false; 
 function queueSync(){ if(!state.user) return; if(syncQueued) return; syncQueued=true; setTimeout(async()=>{ syncQueued=false; await pushLocalToCloud(); await pullCloudToLocal(); }, 400); }
 document.getElementById('syncNowBtn').addEventListener('click', ()=> queueSync() );
+  const fp = document.getElementById('forcePull');
+if (fp) fp.addEventListener('click', () => pullCloudToLocal());
 
 /* ---------------- Init ---------------- */
 function init(){
@@ -794,6 +797,18 @@ btnSignUp.addEventListener('click', async (e)=>{
 btnSignOut.addEventListener('click', async ()=>{ await supabase.auth.signOut(); state.user=null; save(state); setAuthMsg('Signed out',true); setCloud('Not signed in'); });
 if(btnSyncNow) btnSyncNow.addEventListener('click', ()=> queueSync() );
 supabase.auth.onAuthStateChange((_evt, session)=>{ if(session&&session.user){ state.user=session.user; save(state); setCloud('Signed in'); queueSync(); } else { state.user=null; save(state); setCloud('Not signed in'); } });
+  // Also handle the case where a session already exists on load
+(async () => {
+  const { data } = await supabase.auth.getSession();
+  if (data && data.session && data.session.user) {
+    state.user = data.session.user; save(state);
+    setCloud('Signed in');
+    loginWhenSignedOut.style.display = 'none';
+    signedInControls.style.display = 'flex';
+    await pullCloudToLocal();  // <- fetch games on load
+    subscribeRealtime();
+  }
+})();
 
 // ---- Cloud sync ----
 async function fetchCloudGames(){ if(!state.user) return []; try{ const {data,error}=await supabase.from('games').select('*').order('created_at',{ascending:false}); if(error) return []; return data; }catch(e){ return []; } }
