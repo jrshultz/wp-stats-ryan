@@ -284,7 +284,7 @@ tabs.forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active');
   if(b.dataset.tab==='games') renderGames();
-  if(b.dataset.tab==='season') ();
+  if(b.dataset.tab==='season') renderSeason();
   if(b.dataset.tab==='trends') drawTrends();
 }));
 
@@ -456,7 +456,7 @@ async function saveAndMaybeSync(){
   const snap=JSON.parse(JSON.stringify(current));
   state.games.unshift(snap); save(state);
   localStorage.removeItem(DRAFT_KEY);
-  renderGames(); (); drawTrends();
+  renderGames(); renderSeason(); drawTrends();
   if(state.settings.autoSaveCSV) downloadCSVForGame(snap);
   await pushLocalToCloud(); await pullCloudToLocal(); setCloud('Synced');
 }
@@ -508,7 +508,7 @@ function renderGames(){
     }catch(e){ alert('Cloud delete failed: '+(e.message||e)); return; }
     state.games.splice(i,1);
     save(state);
-    renderGames(); (); drawTrends();
+    renderGames(); renderSeason(); drawTrends();
     if(state.user) await pullCloudToLocal();
   }));
   wrap.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{
@@ -557,8 +557,8 @@ function renderSeason(){
     ['Exclusions',         agg.exclusion,       fmt1(perGame(agg.exclusion))],
     ['Exclusions Drawn',   agg.exclusion_drawn, fmt1(perGame(agg.exclusion_drawn))],
     ['Points',             psum,                fmt1(perGame(psum))],
-    ['Shot %', ssum ? ((gsum/ssum)*100).toFixed(0) + '%' : '-',
-           perGame(ssum) ? ((perGame(gsum)/perGame(ssum))*100).toFixed(0) + '%' : '-'],
+    ['Shot %',             (ssum ? (gsum/ssum).toFixed(2) : '-'),
+                           (perGame(ssum) ? (perGame(gsum)/perGame(ssum)).toFixed(2) : '-')],
     ['Minutes',            mmss(totalSec),      n ? mmss(Math.round(totalSec/n)) : '00:00'],
   ];
 
