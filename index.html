@@ -344,7 +344,10 @@ function renderCurrent(){
   });
   const goals = current.stats.goal, shots = current.stats.shot, assists = current.stats.assist;
   document.getElementById('points').textContent = goals + assists;
-  document.getElementById('shotpct').textContent = pct(goals, shots, state.settings.pctMode);
+  document.getElementById('shotpct').textContent =
+  (!shots || shots <= 0)
+    ? '-'
+    : ((goals / shots) * 100).toFixed(0) + '%';
   document.getElementById('shotsTotal').textContent = shots;
   document.getElementById('goalsTotal').textContent = goals;
   document.getElementById('pctnote').textContent = state.settings.pctMode
