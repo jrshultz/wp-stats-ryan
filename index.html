@@ -521,35 +521,72 @@ function renderGames(){
   }));
 }
 
-/* ---------------- Season totals ---------------- */
+/* -------- Season totals: Total + Per Game table -------- */
 function renderSeason(){
-  const agg={shot:0,goal:0,assist:0,steal:0,block:0,five_m_attempt:0,five_m_goal:0,five_m_drawn:0,exclusion:0,exclusion_drawn:0};
-  let tsum=0; state.games.forEach(g=>{ for(const k in agg) agg[k]+=g.stats[k]||0; tsum+=(g.pt_seconds||0); });
-  const gsum=agg.goal, ssum=agg.shot, asum=agg.assist; const n=state.games.length||0; const avgSec=n?Math.round(tsum/n):0;
-
-  document.getElementById('seasonTotals').innerHTML=`<h3>Season Totals</h3><table><tbody>
-<tr><th>Shot</th><td class='right'>${agg.shot}</td></tr>
-<tr><th>Goal</th><td class='right'>${agg.goal}</td></tr>
-<tr><th>Assist</th><td class='right'>${agg.assist}</td></tr>
-<tr><th>Steal</th><td class='right'>${agg.steal}</td></tr>
-<tr><th>Block</th><td class='right'>${agg.block}</td></tr>
-<tr><th>5M Attempt</th><td class='right'>${agg.five_m_attempt}</td></tr>
-<tr><th>5M Goal</th><td class='right'>${agg.five_m_goal}</td></tr>
-<tr><th>5M Drawn</th><td class='right'>${agg.five_m_drawn}</td></tr>
-<tr><th>Exclusion</th><td class='right'>${agg.exclusion}</td></tr>
-<tr><th>Exclusion Drawn</th><td class='right'>${agg.exclusion_drawn}</td></tr>
-<tr><th>Points</th><td class='right'>${gsum+asum}</td></tr>
-<tr><th>Shot %</th><td class='right'>${ssum?(gsum/ssum).toFixed(2):'-'}</td></tr>
-<tr><th>Total Minutes</th><td class='right'>${fmtTime(tsum)}</td></tr>
-<tr><th>Avg Minutes/Game</th><td class='right'>${fmtTime(avgSec)}</td></tr>
-</tbody></table>`;
-
-  document.getElementById('dlSeasonTotals').onclick=()=>{
-    const order=['Shot','Goal','Assist','Steal','Block','5M Attempt','5M Goal','5M Drawn','Exclusion','Exclusion Drawn','Points','ShotPct','TotalMinutes','AvgMinutesPerGame'];
-    const row=[agg.shot,agg.goal,agg.assist,agg.steal,agg.block,agg.five_m_attempt,agg.five_m_goal,agg.five_m_drawn,agg.exclusion,agg.exclusion_drawn,gsum+asum, ssum?(gsum/ssum).toFixed(2):'-', fmtTime(tsum), fmtTime(avgSec)];
-    const csv='Metric,'+order.join(',')+'\nTotals,'+row.join(',')+'\n';
-    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='ryan_wp_season_totals.csv'; a.click();
+  const agg = {
+    shot:0, goal:0, assist:0, steal:0, block:0,
+    five_m_attempt:0, five_m_goal:0, five_m_drawn:0,
+    exclusion:0, exclusion_drawn:0
   };
+  let totalSec = 0;
+  const n = state.games.length || 0;
+
+  state.games.forEach(g => {
+    for (const k in agg) agg[k] += g.stats[k] || 0;
+    totalSec += (g.pt_seconds || 0);
+  });
+
+  const gsum = agg.goal, ssum = agg.shot, psum = gsum + agg.assist;
+
+  // helpers
+  const perGame = v => n ? (v / n) : 0;
+  const fmt1 = v => (Math.round(v * 10) / 10).toFixed(1);  // 1 decimal
+  const mmss = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+
+  // table rows: [Label, Total, Per-game]
+  const rows = [
+    ['Shots',              agg.shot,            fmt1(perGame(agg.shot))],
+    ['Goals',              agg.goal,            fmt1(perGame(agg.goal))],
+    ['Assists',            agg.assist,          fmt1(perGame(agg.assist))],
+    ['Steals',             agg.steal,           fmt1(perGame(agg.steal))],
+    ['Blocks',             agg.block,           fmt1(perGame(agg.block))],
+    ['5M Shots',           agg.five_m_attempt,  fmt1(perGame(agg.five_m_attempt))],
+    ['5M Goals',           agg.five_m_goal,     fmt1(perGame(agg.five_m_goal))],
+    ['5M Drawn',           agg.five_m_drawn,    fmt1(perGame(agg.five_m_drawn))],
+    ['Exclusions',         agg.exclusion,       fmt1(perGame(agg.exclusion))],
+    ['Exclusions Drawn',   agg.exclusion_drawn, fmt1(perGame(agg.exclusion_drawn))],
+    ['Points',             psum,                fmt1(perGame(psum))],
+    ['Shot %',             (ssum ? (gsum/ssum).toFixed(2) : '-'),
+                           (perGame(ssum) ? (perGame(gsum)/perGame(ssum)).toFixed(2) : '-')],
+    ['Minutes',            mmss(totalSec),      n ? mmss(Math.round(totalSec/n)) : '00:00'],
+  ];
+
+  document.getElementById('seasonTotals').innerHTML = `
+    <h3>Season</h3>
+    <table>
+      <thead>
+        <tr><th>Stat</th><th class="right">Total</th><th class="right">Per game</th></tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `<tr><th>${r[0]}</th><td class="right">${r[1]}</td><td class="right">${r[2]}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+
+  // CSV: two columns (Total, PerGame)
+  const btn = document.getElementById('dlSeasonTotals');
+  if (btn) {
+    btn.onclick = () => {
+      const csv = [
+        'Metric,Total,PerGame',
+        ...rows.map(r => `${r[0]},${r[1]},${r[2]}`)
+      ].join('\n') + '\n';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+      a.download = 'season_totals_per_game.csv';
+      a.click();
+    };
+  }
 }
 
 /* ---------------- Trends (lines + markers) ---------------- */
